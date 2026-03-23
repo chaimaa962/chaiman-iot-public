@@ -1,20 +1,15 @@
-🚀 INSTALLATION DU PROJET IOT
+**Lancement du projet**
 
-1. Installer Docker Desktop
-   https://www.docker.com/products/docker-desktop/
+git clone https://github.com/chaimaa962/iot-project.git
+cd iot-project
+docker-compose up -d
 
-2. Créer un dossier "iot-project"
-3. Mettre le fichier docker-compose.yml dans ce dossier
-4. Créer 2 fichiers texte :
-   - password1.txt (contenir "123")
-   - password2.txt (contenir "123")
+🌐 Accès
 
-5. Ouvrir un terminal dans ce dossier
+    Dashboard : http://localhost:3000
 
-6. Lancer :
-   docker-compose up -d
+    Backend : http://localhost:8080
 
-7. Ouvrir le navigateur :
-   http://localhost:3000
+⚙️ Prérequis
 
-Les images seront téléchargées automatiquement depuis Docker Hub !
+    Docker Desktop installé : https://www.docker.com/products/docker-desktop/
