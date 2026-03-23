@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "./IoTDeviceManager.sol";
+
+contract IoTDeviceManagerExtended is IoTDeviceManager {
+    
+    struct Transaction {
+        string deviceId;
+        bytes data;
+        string messageHash;
+        uint256 sequence;
+        uint256 timestamp;
+        address deviceAddress;
+    }
+    
+    mapping(string => Transaction[]) public deviceTransactions;
+    mapping(string => uint256) public lastSequence;
+    
+    event TransactionRecorded(
+        address indexed deviceAddress,
+        string deviceId,
+        uint256 sequence,
+        uint256 timestamp,
+        uint256 blockNumber
+    );
+    
+    function recordTransaction(
+        address deviceAddress,
+        string memory deviceId,
+        bytes memory data,
+        string memory messageHash,
+        uint256 sequence,
+        uint256 timestamp
+    ) public returns (uint256) {
+        
+        // Vérifier que l'appareil existe dans le contrat parent
+        require(this.isDeviceRegistered(deviceAddress), "Appareil non enregistre");
+        
+        require(sequence > lastSequence[deviceId], "Sequence invalide");
+        
+        deviceTransactions[deviceId].push(Transaction({
+            deviceId: deviceId,
+            data: data,
+            messageHash: messageHash,
+            sequence: sequence,
+            timestamp: timestamp,
+            deviceAddress: deviceAddress
+        }));
+        
+        lastSequence[deviceId] = sequence;
+        
+        emit TransactionRecorded(
+            deviceAddress,
+            deviceId,
+            sequence,
+            timestamp,
+            block.number
+        );
+        
+        return deviceTransactions[deviceId].length;
+    }
+    
+    function getTransactionCount(string memory deviceId) public view returns (uint256) {
+        return deviceTransactions[deviceId].length;
+    }
+    
+    function getTransaction(string memory deviceId, uint256 index) 
+        public 
+        view 
+        returns (Transaction memory) 
+    {
+        require(index < deviceTransactions[deviceId].length, "Index invalide");
+        return deviceTransactions[deviceId][index];
+    }
+    
+    function getLatestTransaction(string memory deviceId) 
+        public 
+        view 
+        returns (Transaction memory) 
+    {
+        uint256 count = deviceTransactions[deviceId].length;
+        require(count > 0, "Aucune transaction");
+        return deviceTransactions[deviceId][count - 1];
+    }
+    
+    // Récupérer toutes les transactions d'un appareil (paginated)
+    function getDeviceTransactions(string memory deviceId, uint256 start, uint256 limit) 
+        public 
+        view 
+        returns (Transaction[] memory) 
+    {
+        uint256 total = deviceTransactions[deviceId].length;
+        if (total == 0) {
+            return new Transaction[](0);
+        }
+        
+        uint256 end = start + limit;
+        if (end > total) {
+            end = total;
+        }
+        
+        uint256 resultLength = end - start;
+        Transaction[] memory result = new Transaction[](resultLength);
+        
+        for (uint256 i = 0; i < resultLength; i++) {
+            result[i] = deviceTransactions[deviceId][start + i];
+        }
+        
+        return result;
+    }
+}

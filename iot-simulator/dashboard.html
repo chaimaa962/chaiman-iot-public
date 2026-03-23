@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulateur IoT avec ZKP</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .device { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { color: green; }
+        .failure { color: red; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>📱 Simulateur d'appareils IoT avec ZKP</h1>
+    
+    <button onclick="addDevice()">➕ Ajouter un appareil</button>
+    <button onclick="authenticateAll()">🔐 Authentifier tous</button>
+    
+    <div id="devices"></div>
+
+    <script>
+        let devices = [];
+        
+        function addDevice() {
+            const id = devices.length;
+            const secret = Math.floor(Math.random() * 50) + 20;
+            devices.push({
+                id: id,
+                address: `0xSimDevice${id}`,
+                secret: secret,
+                hash: secret * 2,
+                status: 'inactif'
+            });
+            renderDevices();
+        }
+
+        async function authenticateDevice(device) {
+            device.status = 'authentification...';
+            renderDevices();
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/device/authenticate-zkp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceAddress: device.address })
+                });
+                
+                const data = await response.json();
+                device.status = data.success ? '✅ réussi' : '❌ échoué';
+            } catch (error) {
+                device.status = '❌ erreur';
+            }
+            renderDevices();
+        }
+
+        async function authenticateAll() {
+            for (const device of devices) {
+                await authenticateDevice(device);
+            }
+        }
+
+        function renderDevices() {
+            const container = document.getElementById('devices');
+            container.innerHTML = devices.map(d => `
+                <div class="device">
+                    <strong>${d.address}</strong><br>
+                    Secret: ${d.secret} | Hash: ${d.hash}<br>
+                    Statut: <span class="${d.status.includes('✅') ? 'success' : 'failure'}">${d.status}</span>
+                    <button onclick="authenticateDevice(devices[${d.id}])">Authentifier</button>
+                </div>
+            `).join('');
+        }
+
+        // Ajouter quelques appareils au chargement
+        addDevice(); addDevice(); addDevice();
+    </script>
+</body>
+</html>

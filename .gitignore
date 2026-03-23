@@ -1,0 +1,20 @@
+# Environnements virtuels
+venv/
+env/
+.env
+__pycache__/
+*.pyc
+
+# Données des nœuds
+node1_data/
+node2_data/
+project/
+
+# Fichiers temporaires
+*.log
+*.tmp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

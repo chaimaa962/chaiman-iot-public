@@ -1,0 +1,17 @@
+.exit
+// Quitter
+// Doit afficher: 100.0 ETH
+console.log("Solde:", ethers.formatEther(balance), "ETH");
+const balance = await ethers.provider.getBalance(accounts[0].address);
+// Doit afficher: 0x645B51da62B69F23A260D897E9aAAD56E10aeC7C
+console.log("Compte Hardhat:", accounts[0].address);
+const accounts = await ethers.getSigners();
+exit
+console.log("Solde Hardhat:", ethers.formatEther(balance), "ETH");
+const balance = await ethers.provider.getBalance(accounts[0].address);
+console.log("Solde Hardhat:", ethers.formatEther(balance), "ETH");
+const balance = await ethers.provider.getBalance(accounts[0].address);
+console.log("Solde Hardhat:", ethers.formatEther(balance), "ETH");
+const balance = await ethers.provider.getBalance(accounts[0].address);
+console.log("Compte Hardhat:", accounts[0].address);
+const accounts = await ethers.getSigners();

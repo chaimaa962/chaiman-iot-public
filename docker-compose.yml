@@ -1,0 +1,67 @@
+services:
+  node1:
+    image: ethereum/client-go:latest
+    container_name: geth-node1
+    command: >
+      --datadir=/data --networkid=1234 --port=30301
+      --http --http.port=8545 --http.addr=0.0.0.0
+      --http.api=eth,web3,net,admin,personal,miner,clique
+      --http.corsdomain=* --http.vhosts=*
+      --mine --miner.etherbase=0x9998356a9769806d5998cc252d03888971f348a7
+      --unlock=0x9998356a9769806d5998cc252d03888971f348a7
+      --password=/data/password.txt --allow-insecure-unlock
+    volumes:
+      - ./node1_data:/data
+      - ./password1.txt:/data/password.txt
+    ports:
+      - "8545:8545"
+      - "30301:30301"
+
+  node2:
+    image: ethereum/client-go:latest
+    container_name: geth-node2
+    command: >
+      --datadir=/data --networkid=1234 --port=30302
+      --http --http.port=8546 --http.addr=0.0.0.0
+      --http.api=eth,web3,net,admin,personal,miner,clique
+      --http.corsdomain=* --http.vhosts=*
+      --authrpc.port=8552
+      --mine --miner.etherbase=0x282faf56afcd9b955fe9f325ad30ecc0c1ec3378
+      --unlock=0x282faf56afcd9b955fe9f325ad30ecc0c1ec3378
+      --password=/data/password.txt --allow-insecure-unlock
+      --bootnodes=enode://490b7d8cce49381a3ddf837f7c3d28b5c55f71536b923bd4527bb0d5b64b9ec010e088562595546fb91e8219603802c0da108e696b23d2f802db1b511f061035@node1:30301
+    volumes:
+      - ./node2_data:/data
+      - ./password2.txt:/data/password.txt
+    ports:
+      - "8546:8546"
+      - "30302:30302"
+    depends_on:
+      - node1
+
+  backend:
+    build: ./iot-backend
+    container_name: iot-backend
+    environment:
+      - NODE_URL=http://node1:8545
+      - CONTRACT_ADDRESS=0x0E997A900f76eBaf38a7581D6aDA88302aF0b180
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - node1
+      - node2
+
+  simulator:
+    build: ./iot-simulator
+    container_name: iot-simulator
+    depends_on:
+      - backend
+
+  dashboard:
+    build: ./iot-dashboard
+    container_name: iot-dashboard
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
