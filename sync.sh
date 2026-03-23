@@ -1,21 +1,25 @@
 #!/bin/bash
 echo "🔄 Synchronisation avec GitHub..."
 
-# Aller dans le dossier du projet
 cd ~/iot-docker-project
 
-# Ajouter tous les changements
+# Ajouter les changements
 git add .
 
 # Vérifier s'il y a des modifications
-if git diff --cached --quiet; then
+if git diff --cached --quiet && git diff --quiet; then
     echo "✅ Aucun changement à synchroniser"
-else
-    # Faire un commit avec la date
-    git commit -m "Mise à jour automatique - $(date '+%Y-%m-%d %H:%M:%S')"
-    
-    # Pousser sur GitHub
-    git push
-    
+    exit 0
+fi
+
+# Faire un commit
+git commit -m "Mise à jour automatique - $(date '+%Y-%m-%d %H:%M:%S')"
+
+# Récupérer les changements distants et pousser
+git pull origin main --rebase && git push
+
+if [ $? -eq 0 ]; then
     echo "✅ Synchronisation terminée !"
+else
+    echo "❌ Erreur lors de la synchronisation"
 fi
