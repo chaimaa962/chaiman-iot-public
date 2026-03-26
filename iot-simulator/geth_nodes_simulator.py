@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Simulateur sécurisé des 4 nœuds Geth - VERSION FINALE
-Correction: Timeout augmenté + gestion séquence améliorée
+Simulateur sécurisé des 4 nœuds Geth - AVEC LES VRAIES CLÉS
 """
 
 import asyncio
@@ -20,34 +19,37 @@ load_dotenv(override=True)
 
 BN254_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 
+# ============================================
+# LES 4 NŒUDS GETH AVEC LEURS VRAIES ADRESSES ET CLÉS
+# ============================================
 GETH_NODES = [
     {
         "device_id": "GETH_NODE_1",
-        "address": "0x9998356a9769806d5998cc252d03888971f348a7",
+        "address": "0xc6a0a22e356ce0b09246dd7a1b0c3b223d39e0ff",
         "private_key": os.getenv("GETH_NODE_1_KEY"),
         "interval": 5,
-        "message": "Heartbeat #{count} from GETH_1",
+        "message": "Bonjour je suis le nœud Geth 1 (autorité PoA) - Message #{count}",
     },
     {
         "device_id": "GETH_NODE_2",
-        "address": "0x282faf56afcd9b955fe9f325ad30ecc0c1ec3378",
+        "address": "0x7d2b6759153a1625a757f36b63f7034dd8c095ed",
         "private_key": os.getenv("GETH_NODE_2_KEY"),
         "interval": 10,
-        "message": "Heartbeat #{count} from GETH_2",
+        "message": "Bonjour je suis le nœud Geth 2 (autorité PoA) - Message #{count}",
     },
     {
         "device_id": "GETH_NODE_3",
-        "address": "0x9e34d2d8330fe6e616a0fde6a3d6b83652625ad4",
+        "address": "0x56f1df7fd9da1b90616c9fc7e4faf303a1cf6830",
         "private_key": os.getenv("GETH_NODE_3_KEY"),
         "interval": 15,
-        "message": "Heartbeat #{count} from GETH_3",
+        "message": "Bonjour je suis le nœud Geth 3 (autorité PoA) - Message #{count}",
     },
     {
         "device_id": "GETH_NODE_4",
-        "address": "0x500d84dd86c408362bce4140b5e5f82b2f908da8",
+        "address": "0xb1a91f75437f01983a843719ec421532f5e044ed",
         "private_key": os.getenv("GETH_NODE_4_KEY"),
         "interval": 25,
-        "message": "Heartbeat #{count} from GETH_4",
+        "message": "Bonjour je suis le nœud Geth 4 (autorité PoA) - Message #{count}",
     }
 ]
 
@@ -74,9 +76,8 @@ class SecureGethNode:
         self._private_key_bytes = bytes.fromhex(private_key.zfill(64))
         
         derived = self.account.address.lower()
-
         if derived != self.address:
-            print(f"\n⚠️  {self.device_id}: ALERTE ADRESSE!")
+            print(f"⚠️  {self.device_id}: ALERTE ADRESSE!")
             print(f"   Config: {self.address}")
             print(f"   Dérivée: {derived}")
             raise ValueError(f"Clé privée invalide pour {self.device_id}")
@@ -84,7 +85,6 @@ class SecureGethNode:
             print(f"✅ {self.device_id}: {self.address[:20]}... (clé OK)")
 
     def sign_message_ecdsa(self, message: str) -> tuple:
-        """Signature ECDSA avec hash 32 bytes garanti"""
         msg_bytes = message.encode('utf-8')
         message_hash = keccak(msg_bytes)
         
@@ -241,12 +241,10 @@ class SecureGethNode:
             return False
 
 async def node_loop(node, session):
-    await asyncio.sleep(node.interval * 0.1 * (hash(node.device_id) % 10) / 10)
-
+    await asyncio.sleep(node.interval * 0.1)
     consecutive_failures = 0
     while True:
         success = await node.send_secure_message(session)
-
         if success:
             consecutive_failures = 0
             await asyncio.sleep(node.interval)
@@ -258,14 +256,11 @@ async def node_loop(node, session):
 
 async def stats_reporter(nodes):
     await asyncio.sleep(10)
-
     while True:
         await asyncio.sleep(30)
-
         print("\n" + "="*70)
         print(f"📊 STATISTIQUES - {datetime.now().strftime('%H:%M:%S')}")
         print("="*70)
-
         total_sent = total_success = 0
         for node in nodes:
             rate = node.stats["success"] / max(1, node.stats["sent"]) * 100 if node.stats["sent"] > 0 else 0
@@ -275,7 +270,6 @@ async def stats_reporter(nodes):
                   f"{rate:5.1f}%")
             total_sent += node.stats['sent']
             total_success += node.stats['success']
-
         print("-"*70)
         global_rate = total_success / max(1, total_sent) * 100 if total_sent > 0 else 0
         print(f"   {'TOTAL':12}: {total_sent:4d} envois, {total_success:4d} succès, "
@@ -286,12 +280,7 @@ async def check_backend():
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get("http://localhost:8080/api/health", timeout=5) as resp:
-                if resp.status == 200:
-                    return True, "✅ Backend OK"
-                else:
-                    return False, f"❌ Backend HTTP {resp.status}"
-    except aiohttp.ClientConnectorError:
-        return False, "❌ Connexion refusée - Backend sur port 8080 ?"
+                return True, "✅ Backend OK" if resp.status == 200 else f"❌ Backend HTTP {resp.status}"
     except Exception as e:
         return False, f"❌ Erreur: {e}"
 
@@ -303,7 +292,6 @@ async def main():
     backend_ok, backend_msg = await check_backend()
     print(backend_msg)
     if not backend_ok:
-        print("\n💡 Démarre d'abord le backend: cd ~/iot-backend && go run cmd/api/main.go")
         return
 
     print("\n📋 Chargement des nœuds...")
@@ -322,7 +310,7 @@ async def main():
     print(f"\n📋 RÉSUMÉ DES NŒUDS")
     print("="*70)
     for node in nodes:
-        print(f"✅ {node.device_id}: {node.address[:25]}...")
+        print(f"✅ {node.device_id}: {node.address[:25]}... (interval: {node.interval}s)")
 
     print(f"\n🔄 Démarrage de {len(nodes)} nœuds...")
     print("   Appuyez sur Ctrl+C pour arrêter\n")
@@ -331,28 +319,13 @@ async def main():
     async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = [asyncio.create_task(node_loop(node, session)) for node in nodes]
         tasks.append(asyncio.create_task(stats_reporter(nodes)))
-
         try:
             await asyncio.gather(*tasks)
         except KeyboardInterrupt:
             print("\n\n👋 Arrêt demandé!")
-        finally:
-            print("\n📊 Statistiques finales:")
-            for node in nodes:
-                rate = node.stats["success"] / max(1, node.stats["sent"]) * 100 if node.stats["sent"] > 0 else 0
-                print(f"   {node.device_id}: {node.stats['success']}/{node.stats['sent']} ({rate:.1f}%)")
-
-            for task in tasks:
-                task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
-            print("👋 Simulateur arrêté.")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\n\n👋 Au revoir!")
-    except Exception as e:
-        print(f"\n❌ Erreur fatale: {e}")
-        import traceback
-        traceback.print_exc()

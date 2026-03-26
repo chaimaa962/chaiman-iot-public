@@ -35,45 +35,45 @@ var (
     confirmedTxCacheMu   sync.RWMutex
     pendingTransactions  = make(map[common.Hash]bool)
     pendingTxMu          sync.Mutex
-
-    // LES 4 NŒUDS GETH
-    GethNodes = []struct {
-        Address  string
-        DeviceID string
-        NodeID   int
-        Interval int
-        Message  string
-    }{
-        {
-            Address:  "0x9998356a9769806d5998cc252d03888971f348a7",
-            DeviceID: "GETH_NODE_1",
-            NodeID:   1,
-            Interval: 5,
-            Message:  "Bonjour je suis le nœud Geth 1 (autorité PoA)",
-        },
-        {
-            Address:  "0x282faf56afcd9b955fe9f325ad30ecc0c1ec3378",
-            DeviceID: "GETH_NODE_2",
-            NodeID:   2,
-            Interval: 10,
-            Message:  "Bonjour je suis le nœud Geth 2 (autorité PoA)",
-        },
-        {
-            Address:  "0x9e34d2d8330fe6e616a0fde6a3d6b83652625ad4",
-            DeviceID: "GETH_NODE_3",
-            NodeID:   3,
-            Interval: 15,
-            Message:  "Bonjour je suis le nœud Geth 3 (autorité PoA)",
-        },
-        {
-            Address:  "0x500d84dd86c408362bce4140b5e5f82b2f908da8",
-            DeviceID: "GETH_NODE_4",
-            NodeID:   4,
-            Interval: 25,
-            Message:  "Bonjour je suis le nœud Geth 4 (autorité PoA)",
-        },
-    }
 )
+
+// LES 4 NŒUDS GETH
+var GethNodes = []struct {
+    Address  string
+    DeviceID string
+    NodeID   int
+    Interval int
+    Message  string
+}{
+    {
+        Address:  "0xc6a0a22e356ce0b09246dd7a1b0c3b223d39e0ff",
+        DeviceID: "GETH_NODE_1",
+        NodeID:   1,
+        Interval: 5,
+        Message:  "Bonjour je suis le nœud Geth 1 (autorité PoA)",
+    },
+    {
+        Address:  "0x7d2b6759153a1625a757f36b63f7034dd8c095ed",
+        DeviceID: "GETH_NODE_2",
+        NodeID:   2,
+        Interval: 10,
+        Message:  "Bonjour je suis le nœud Geth 2 (autorité PoA)",
+    },
+    {
+        Address:  "0x56f1df7fd9da1b90616c9fc7e4faf303a1cf6830",
+        DeviceID: "GETH_NODE_3",
+        NodeID:   3,
+        Interval: 15,
+        Message:  "Bonjour je suis le nœud Geth 3 (autorité PoA)",
+    },
+    {
+        Address:  "0xb1a91f75437f01983a843719ec421532f5e044ed",
+        DeviceID: "GETH_NODE_4",
+        NodeID:   4,
+        Interval: 25,
+        Message:  "Bonjour je suis le nœud Geth 4 (autorité PoA)",
+    },
+}
 
 // ============================================
 // INITIALISATION
@@ -116,10 +116,7 @@ func InitBlockchain(nodeURL, privateKeyHex, contractAddr string) error {
     log.Println("✅ Blockchain connectée - ChainID:", ChainID)
     log.Printf("✅ Contrat chargé à l'adresse: %s", ContractAddress.Hex())
 
-    // Démarrer le goroutine de nettoyage du cache
     go cacheCleanupRoutine()
-    
-    // Démarrer le goroutine de confirmation asynchrone
     go asyncConfirmationRoutine()
 
     InitGethNodes()
@@ -127,7 +124,6 @@ func InitBlockchain(nodeURL, privateKeyHex, contractAddr string) error {
     return nil
 }
 
-// Goroutine pour nettoyer le cache périodiquement
 func cacheCleanupRoutine() {
     ticker := time.NewTicker(5 * time.Minute)
     defer ticker.Stop()
@@ -149,7 +145,6 @@ func cacheCleanupRoutine() {
     }
 }
 
-// Goroutine pour confirmer les transactions en arrière-plan
 func asyncConfirmationRoutine() {
     ticker := time.NewTicker(2 * time.Second)
     defer ticker.Stop()
@@ -236,11 +231,6 @@ func generatePublicKeyFromAddress(address string) string {
     return "0x" + common.Bytes2Hex(hash.Bytes()[:32])
 }
 
-// ============================================
-// GESTION DES TRANSACTIONS
-// ============================================
-
-
 func RecordAuthenticationWithRetry(deviceAddress common.Address, success bool, proofHash [32]byte) (common.Hash, error) {
     var lastErr error
 
@@ -266,10 +256,6 @@ func RecordAuthenticationWithRetry(deviceAddress common.Address, success bool, p
 
     return common.Hash{}, fmt.Errorf("échec après 3 tentatives: %v", lastErr)
 }
-
-// ============================================
-// GESTION DES APPAREILS
-// ============================================
 
 func DeviceRegister(deviceAddress common.Address, publicKey, metadata string) (common.Hash, error) {
     auth, err := GetTransactionAuth()
@@ -332,10 +318,6 @@ func DeviceActivate(deviceAddress common.Address) (common.Hash, error) {
     return tx.Hash(), nil
 }
 
-// ============================================
-// AUTHENTIFICATIONS ZKP (CORRIGÉ AVEC CONFIRMATION AMÉLIORÉE)
-// ============================================
-
 func AuthRecord(deviceAddress common.Address, success bool, proofHash [32]byte) (common.Hash, error) {
     log.Printf("🔐 Enregistrement authentification pour %s", deviceAddress.Hex()[:15])
 
@@ -389,10 +371,6 @@ func AuthRecord(deviceAddress common.Address, success bool, proofHash [32]byte) 
     log.Printf("⚠️ Transaction non confirmée après 60s: %s", txHash.Hex()[:15])
     return txHash, nil
 }
-
-// ============================================
-// NŒUDS GETH
-// ============================================
 
 func GetGethNodeAddresses() []common.Address {
     addresses := make([]common.Address, len(GethNodes))
@@ -468,10 +446,6 @@ func GetAllGethNodes() []map[string]interface{} {
     return nodes
 }
 
-// ============================================
-// HISTORIQUE ET STATISTIQUES
-// ============================================
-
 func HistoryGetAll(deviceAddress common.Address) ([]IoTDeviceManagerAuthRecord, error) {
     return Contract.GetAuthHistory(&bind.CallOpts{}, deviceAddress)
 }
@@ -517,10 +491,6 @@ func countActiveGethNodes() int {
     return active
 }
 
-// ============================================
-// FONCTIONS UTILITAIRES
-// ============================================
-
 func WaitForTransaction(txHash common.Hash) error {
     log.Printf("⏳ Attente confirmation TX: %s", txHash.Hex()[:15])
 
@@ -561,10 +531,6 @@ func GetBalance(address common.Address) (*big.Int, error) {
 func GetBlockNumber() (uint64, error) {
     return Client.BlockNumber(context.Background())
 }
-
-// ============================================
-// LISTE DES APPAREILS
-// ============================================
 
 func GetAllDevices() ([]common.Address, error) {
     return Contract.GetAllDevices(&bind.CallOpts{})
@@ -620,10 +586,6 @@ func GetAllDevicesWithDetails() ([]map[string]interface{}, error) {
 
     return devices, nil
 }
-
-// ============================================
-// TRANSACTIONS
-// ============================================
 
 type Transaction struct {
     TxHash        string
@@ -741,10 +703,6 @@ func PrintGethNodesStatus() {
 
     log.Println("============================================================")
 }
-
-// ============================================
-// FONCTIONS POUR LE DASHBOARD (VERSION FINALE CORRIGÉE)
-// ============================================
 
 func GetRecentTransactions(limit int) ([]Transaction, error) {
     transactions := []Transaction{}
@@ -882,10 +840,6 @@ func GetRecentAuthentications(limit int) ([]Transaction, error) {
     return transactions, nil
 }
 
-// ============================================
-// FONCTIONS DE VÉRIFICATION MANUELLE
-// ============================================
-
 func VerifyTransactionStatus(txHash common.Hash) (*types.Receipt, error) {
     confirmedTxCacheMu.RLock()
     receipt, found := confirmedTxCache[txHash]
@@ -914,9 +868,6 @@ func GetPendingTransactionsCount() int {
     defer pendingTxMu.Unlock()
     return len(pendingTransactions)
 }
-
-
-// internal/blockchain/client.go
 
 func GetTransactionAuth() (*bind.TransactOpts, error) {
     auth, err := bind.NewKeyedTransactorWithChainID(PrivateKey, ChainID)
