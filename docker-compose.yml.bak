@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # NŒUDS GETH (PoA)
+  # ============================================
+  geth-node1:
+    image: ethereum/client-go:latest
+    container_name: geth-node1
+    volumes:
+      - ./node1_data:/data
+      - ./password1.txt:/data/password.txt
+    command: >
+      --datadir=/data
+      --networkid=1234
+      --port=30301
+      --http
+      --http.port=8545
+      --http.addr=0.0.0.0
+      --http.api=eth,web3,net,admin,personal,miner,clique
+      --http.corsdomain=*
+      --mine
+      --unlock=0x09206dbcf3804a72577d7bf96c66f78b147fc682
+      --password=/data/password.txt
+      --allow-insecure-unlock
+    ports:
+      - "8545:8545"
+      - "30301:30301"
+    networks:
+      - iot-network
+
+  geth-node2:
+    image: ethereum/client-go:latest
+    container_name: geth-node2
+    volumes:
+      - ./node2_data:/data
+      - ./password2.txt:/data/password.txt
+    command: >
+      --datadir=/data
+      --networkid=1234
+      --port=30301
+      --http
+      --http.port=8545
+      --http.addr=0.0.0.0
+      --http.api=eth,web3,net,admin,personal,miner,clique
+      --http.corsdomain=*
+      --mine
+      --unlock=0xf285d86346e74199ff2491bab5f3862363dd486a
+      --password=/data/password.txt
+      --allow-insecure-unlock
+    ports:
+      - "8546:8545"
+      - "30302:30301"
+    depends_on:
+      - geth-node1
+    networks:
+      - iot-network
+
+  # ============================================
+  # BACKEND GO (IoT + ZKP)
+  # ============================================
+  iot-backend:
+    build: ./backend
+    container_name: iot-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - NODE_URL=http://geth-node1:8545
+      - CONTRACT_ADDRESS=0x3A220f351252089D385b29beca14e27F204c296A
+      - GETH_NODE_1_KEY=${GETH_NODE_1_KEY}
+      - GETH_NODE_2_KEY=${GETH_NODE_2_KEY}
+      - GETH_NODE_3_KEY=${GETH_NODE_3_KEY}
+      - GETH_NODE_4_KEY=${GETH_NODE_4_KEY}
+    depends_on:
+      - geth-node1
+      - geth-node2
+    networks:
+      - iot-network
+    restart: unless-stopped
+
+  # ============================================
+  # DASHBOARD REACT
+  # ============================================
+  iot-dashboard:
+    build: .
+    container_name: iot-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://iot-backend:8080
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - iot-backend
+    networks:
+      - iot-network
+    restart: unless-stopped
+
+  # ============================================
+  # SIMULATEUR GETH NODES (optionnel)
+  # ============================================
+  geth-simulator:
+    build: 
+      context: .
+      dockerfile: Dockerfile.simulator
+    container_name: geth-simulator
+    environment:
+      - GETH_NODE_1_KEY=${GETH_NODE_1_KEY}
+      - GETH_NODE_2_KEY=${GETH_NODE_2_KEY}
+      - GETH_NODE_3_KEY=${GETH_NODE_3_KEY}
+      - GETH_NODE_4_KEY=${GETH_NODE_4_KEY}
+    depends_on:
+      - iot-backend
+    networks:
+      - iot-network
+    restart: unless-stopped
+
+networks:
+  iot-network:
+    driver: bridge

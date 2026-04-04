@@ -1,48 +1,260 @@
+version: '3.8'
+
+networks:
+  poa-network:
+    external: true
+
 services:
-  geth-node1:
-    image: ethereum/client-go:latest
-    container_name: geth-node1
+  validator1:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-validator1
+    hostname: validator1
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.11
     volumes:
-      - ./node1_data:/data
-      - ./password1.txt:/data/password.txt
-    command: >
-      --datadir=/data
-      --networkid=1234
-      --port=30301
-      --http
-      --http.port=8545
-      --http.addr=0.0.0.0
-      --http.api=eth,web3,net,admin,personal,miner,clique
-      --http.corsdomain=*
-      --mine
-      --unlock=0x09206dbcf3804a72577d7bf96c66f78b147fc682
-      --password=/data/password.txt
-      --allow-insecure-unlock
+      - /home/chaimaa/iot-docker-project/nodes/validator1:/root/.ethereum
+    environment:
+      - GETH_NODEKEY_HEX_FILE=/root/.ethereum/geth/nodekey
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30301
+      - --http
+      - --http.port=8541
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.corsdomain=*
+      - --authrpc.port=8551
+      - --mine
+      - --miner.etherbase=0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277
+      - --unlock=0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277
+      - --password=/root/.ethereum/password.txt
+      - --allow-insecure-unlock
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+      - --verbosity=4
+    ports:
+      - "8541:8541"
+      - "8551:8551"
+      - "30301:30301/tcp"
+      - "30301:30301/udp"
+    restart: unless-stopped
+
+  validator2:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-validator2
+    hostname: validator2
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.12
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/validator2:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30302
+      - --http
+      - --http.port=8542
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.corsdomain=*
+      - --authrpc.port=8552
+      - --mine
+      - --miner.etherbase=0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30
+      - --unlock=0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30
+      - --password=/root/.ethereum/password.txt
+      - --allow-insecure-unlock
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+      - --verbosity=4
+    ports:
+      - "8542:8542"
+      - "8552:8552"
+      - "30302:30302/tcp"
+      - "30302:30302/udp"
+    restart: unless-stopped
+
+  validator3:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-validator3
+    hostname: validator3
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.13
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/validator3:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30303
+      - --http
+      - --http.port=8543
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.corsdomain=*
+      - --authrpc.port=8553
+      - --mine
+      - --miner.etherbase=0x60E69259368A740e8fE91CC61c5306234E36e01d
+      - --unlock=0x60E69259368A740e8fE91CC61c5306234E36e01d
+      - --password=/root/.ethereum/password.txt
+      - --allow-insecure-unlock
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+      - --verbosity=4
+    ports:
+      - "8543:8543"
+      - "8553:8553"
+      - "30303:30303/tcp"
+      - "30303:30303/udp"
+    restart: unless-stopped
+
+  validator4:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-validator4
+    hostname: validator4
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.14
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/validator4:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30304
+      - --http
+      - --http.port=8544
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.corsdomain=*
+      - --authrpc.port=8554
+      - --mine
+      - --miner.etherbase=0x29885Af643612E8B72123CcC3D6f527cD9321319
+      - --unlock=0x29885Af643612E8B72123CcC3D6f527cD9321319
+      - --password=/root/.ethereum/password.txt
+      - --allow-insecure-unlock
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+      - --verbosity=4
+    ports:
+      - "8544:8544"
+      - "8554:8554"
+      - "30304:30304/tcp"
+      - "30304:30304/udp"
+    restart: unless-stopped
+
+  fullnode1:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-fullnode1
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.21
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/fullnode1:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30305
+      - --http
+      - --http.port=8545
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net
+      - --http.corsdomain=*
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
     ports:
       - "8545:8545"
-      - "30301:30301"
+      - "30305:30305/tcp"
+      - "30305:30305/udp"
+    restart: unless-stopped
 
-  geth-node2:
-    image: ethereum/client-go:latest
-    container_name: geth-node2
+  fullnode2:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-fullnode2
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.22
     volumes:
-      - ./node2_data:/data
-      - ./password2.txt:/data/password.txt
-    command: >
-      --datadir=/data
-      --networkid=1234
-      --port=30301
-      --http
-      --http.port=8545
-      --http.addr=0.0.0.0
-      --http.api=eth,web3,net,admin,personal,miner,clique
-      --http.corsdomain=*
-      --mine
-      --unlock=0xf285d86346e74199ff2491bab5f3862363dd486a
-      --password=/data/password.txt
-      --allow-insecure-unlock
+      - /home/chaimaa/iot-docker-project/nodes/fullnode2:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30306
+      - --http
+      - --http.port=8546
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net
+      - --http.corsdomain=*
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
     ports:
-      - "8546:8545"
-      - "30302:30301"
-    depends_on:
-      - geth-node1
+      - "8546:8546"
+      - "30306:30306/tcp"
+      - "30306:30306/udp"
+    restart: unless-stopped
+
+  fullnode3:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-fullnode3
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.23
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/fullnode3:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30307
+      - --http
+      - --http.port=8547
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net
+      - --http.corsdomain=*
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+    ports:
+      - "8547:8547"
+      - "30307:30307/tcp"
+      - "30307:30307/udp"
+    restart: unless-stopped
+
+  fullnode4:
+    image: ethereum/client-go:v1.13.15
+    container_name: geth-fullnode4
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.24
+    volumes:
+      - /home/chaimaa/iot-docker-project/nodes/fullnode4:/root/.ethereum
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=2026
+      - --port=30308
+      - --http
+      - --http.port=8548
+      - --http.addr=0.0.0.0
+      - --http.api=eth,web3,net
+      - --http.corsdomain=*
+      - --syncmode=full
+      - --snapshot=false
+      - --netrestrict=172.20.0.0/16
+      - --nodiscover
+    ports:
+      - "8548:8548"
+      - "30308:30308/tcp"
+      - "30308:30308/udp"
+    restart: unless-stopped

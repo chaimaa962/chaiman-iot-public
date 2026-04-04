@@ -1,0 +1,53 @@
+{
+  "network_id": 1234,
+  "consensus": "clique",
+  "block_period": 5,
+  "min_nodes": 2,
+  "max_nodes": 10,
+  "nodes": [
+    {
+      "id": 1,
+      "name": "GETH_NODE_1",
+      "address": "",
+      "interval": 5,
+      "message": "Bonjour je suis le nœud Geth 1",
+      "is_authority": true,
+      "port": 8545,
+      "p2p_port": 30301,
+      "is_active": false
+    },
+    {
+      "id": 2,
+      "name": "GETH_NODE_2",
+      "address": "",
+      "interval": 10,
+      "message": "Bonjour je suis le nœud Geth 2",
+      "is_authority": true,
+      "port": 8546,
+      "p2p_port": 30302,
+      "is_active": false
+    },
+    {
+      "id": 3,
+      "name": "GETH_NODE_3",
+      "address": "",
+      "interval": 15,
+      "message": "Bonjour je suis le nœud Geth 3",
+      "is_authority": true,
+      "port": 8547,
+      "p2p_port": 30303,
+      "is_active": false
+    },
+    {
+      "id": 4,
+      "name": "GETH_NODE_4",
+      "address": "",
+      "interval": 25,
+      "message": "Bonjour je suis le nœud Geth 4",
+      "is_authority": true,
+      "port": 8548,
+      "p2p_port": 30304,
+      "is_active": false
+    }
+  ]
+}

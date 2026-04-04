@@ -1,0 +1,17 @@
+# ============================================
+# Adresses des validateurs - Réseau POA
+# ============================================
+validator1: 0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277
+validator2: 0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30
+validator3: 0x60E69259368A740e8fE91CC61c5306234E36e01d
+validator4: 0x29885Af643612E8B72123CcC3D6f527cD9321319
+
+# Ports RPC:
+validator1: http://localhost:8541
+validator2: http://localhost:8542
+validator3: http://localhost:8543
+validator4: http://localhost:8544
+fullnode1: http://localhost:8545
+fullnode2: http://localhost:8546
+fullnode3: http://localhost:8547
+fullnode4: http://localhost:8548
