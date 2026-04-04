@@ -258,3 +258,16 @@ services:
       - "30308:30308/tcp"
       - "30308:30308/udp"
     restart: unless-stopped
+
+  iot-backend:
+    build: ./iot-backend
+    container_name: iot-backend
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.30
+    ports:
+      - "5000:5000"
+    environment:
+      - BLOCKCHAIN_RPC=http://172.20.0.11:8541
+    depends_on:
+      - validator1

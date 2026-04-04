@@ -37,7 +37,7 @@ var (
     pendingTxMu          sync.Mutex
 )
 
-// LES 4 NŒUDS GETH
+// LES 4 NŒUDS GETH - AVEC LES VRAIES ADRESSES DES VALIDATEURS
 var GethNodes = []struct {
     Address  string
     DeviceID string
@@ -46,35 +46,34 @@ var GethNodes = []struct {
     Message  string
 }{
     {
-        Address:  "0xc6a0a22e356ce0b09246dd7a1b0c3b223d39e0ff",
+        Address:  "0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277",
         DeviceID: "GETH_NODE_1",
         NodeID:   1,
         Interval: 5,
         Message:  "Bonjour je suis le nœud Geth 1 (autorité PoA)",
     },
     {
-        Address:  "0x7d2b6759153a1625a757f36b63f7034dd8c095ed",
+        Address:  "0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30",
         DeviceID: "GETH_NODE_2",
         NodeID:   2,
         Interval: 10,
         Message:  "Bonjour je suis le nœud Geth 2 (autorité PoA)",
     },
     {
-        Address:  "0x56f1df7fd9da1b90616c9fc7e4faf303a1cf6830",
+        Address:  "0x60E69259368A740e8fE91CC61c5306234E36e01d",
         DeviceID: "GETH_NODE_3",
         NodeID:   3,
         Interval: 15,
         Message:  "Bonjour je suis le nœud Geth 3 (autorité PoA)",
     },
     {
-        Address:  "0xb1a91f75437f01983a843719ec421532f5e044ed",
+        Address:  "0x29885Af643612E8B72123CcC3D6f527cD9321319",
         DeviceID: "GETH_NODE_4",
         NodeID:   4,
         Interval: 25,
         Message:  "Bonjour je suis le nœud Geth 4 (autorité PoA)",
     },
 }
-
 // ============================================
 // INITIALISATION
 // ============================================

@@ -1,14 +1,6 @@
-FROM golang:1.25-alpine
-
+FROM python:3.9-slim
 WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
-
+RUN pip install flask web3 requests python-dotenv pymongo
 COPY . .
-
-RUN go build -o main ./cmd/api
-
-EXPOSE 8080
-
-CMD ["./main"]
+EXPOSE 5000
+CMD ["python", "app.py"]

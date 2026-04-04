@@ -1,0 +1,76 @@
+
+
+./demarer.sh
+
+
+# Nettoyer les enodes (sans ?discport=0)
+enode1="enode://9f07a02efe326bc16b46e356acf2960fec0a7e835b2f7fb061bad442b0d05084682fa0b3005e71c4d4baaecd65e6a33b726a88c5787dafbcea30bc29adc59481@172.20.0.11:30301"
+enode2="enode://740eee8689016b4b3b515b223c7c5ea58da5a0f0c7bc72b5dca3fae2bc8e4ed3677e5fbb624c0438862a325ae1a385f9a843804991ab1878711640a9c6ba066d@172.20.0.12:30302"
+enode3="enode://ab091bee69aea0ac1da14ed979e60c0ff396a6f28842ff40a83417f625c339e37876ecc1e4a5dee70d265e14c0ca9507100b680acfcb175acefb38b8fda003e6@172.20.0.13:30303"
+enode4="enode://9e67d0919200a26220cd7d18f3d2f2fe6628cb4059ee7671a129f091e3681a6841df80c252ac64aaeffc6569ce13572e9c66e25711489e2070ed6f7d56727945@172.20.0.14:30304"
+
+# Connecter
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+
+# Vérifier
+sleep 3
+for port in 8541 8542 8543 8544; do
+    count=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_peers","params":[],"id":1}' | jq '.result | length')
+    echo "Port $port: $count peers"
+done
+
+
+
+
+# Vérifier les blocs (doit être > 0)
+for port in 8541 8542 8543 8544; do
+    curl -s -X POST http://localhost:$port \
+        -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | jq -r '.result' | xargs printf "Port $port: bloc #%d\n"
+done
+
+
+docker logs -f iot-backend-go
+
+
+
+
+
+cd ~/iot-docker-project
+
+# Supprimer l'ancien
+docker stop iot-simulator
+docker rm iot-simulator
+docker rmi iot-simulator:latest
+
+# Reconstruire
+docker build --no-cache -f simulator.Dockerfile -t iot-simulator:latest .
+
+# Lancer
+docker run -d \
+  --name iot-simulator \
+  -e GETH_NODE_1_KEY=4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318 \
+  -e GETH_NODE_2_KEY=2e083478628e8e5365a6d5a5d5f5c5a5b5b5a5c5d5e5f5a5b5c5d5e5f5a5b5c5d \
+  -e GETH_NODE_3_KEY=3c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362319 \
+  -e GETH_NODE_4_KEY=4d083478628e8e5365a6d5a5d5f5c5a5b5b5a5c5d5e5f5a5b5c5d5e5f5a5b5c5e \
+  --network poa-network \
+  iot-simulator:latest
+
+
+
+
+docker logs -f iot-simulator
