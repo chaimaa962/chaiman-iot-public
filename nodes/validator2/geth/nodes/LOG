@@ -2055,3 +2055,38 @@
 =============== Apr 5, 2026 (UTC) ===============
 00:20:21.398233 db@close closing
 00:20:21.408871 db@close done T·10.627363ms
+=============== Apr 5, 2026 (UTC) ===============
+11:59:46.749703 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:59:46.762762 version@stat F·[0 1] S·102KiB[0B 102KiB] Sc·[0.00 0.00]
+11:59:46.762951 db@open opening
+11:59:46.769478 journal@recovery F·1
+11:59:46.945187 journal@recovery recovering @476
+11:59:46.960928 memdb@flush created L0@479 N·1 S·164B "loc..seq,v5198":"loc..seq,v5198"
+11:59:46.962437 version@stat F·[1 1] S·102KiB[164B 102KiB] Sc·[0.25 0.00]
+11:59:47.003713 db@janitor F·5 G·1
+11:59:47.003735 db@janitor removing table-475
+11:59:47.022725 db@open done T·259.761671ms
+14:01:42.439230 db@close closing
+14:01:42.469630 db@close done T·30.403669ms
+=============== Apr 5, 2026 (UTC) ===============
+14:06:18.397454 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:06:18.401052 version@stat F·[1 1] S·102KiB[164B 102KiB] Sc·[0.25 0.00]
+14:06:18.401088 db@open opening
+14:06:18.401141 journal@recovery F·1
+14:06:18.417553 journal@recovery recovering @480
+14:06:18.430721 memdb@flush created L0@482 N·1 S·164B "loc..seq,v5200":"loc..seq,v5200"
+14:06:18.482836 version@stat F·[2 1] S·102KiB[328B 102KiB] Sc·[0.50 0.00]
+14:06:18.547135 db@janitor F·5 G·0
+14:06:18.547154 db@open done T·146.059976ms
+14:13:00.954902 db@close closing
+14:13:00.960142 db@close done T·5.247585ms
+=============== Apr 5, 2026 (UTC) ===============
+17:58:11.548110 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+17:58:11.553109 version@stat F·[2 1] S·102KiB[328B 102KiB] Sc·[0.50 0.00]
+17:58:11.553485 db@open opening
+17:58:11.557445 journal@recovery F·1
+17:58:11.585747 journal@recovery recovering @483
+17:58:11.599807 memdb@flush created L0@485 N·1 S·164B "loc..seq,v5202":"loc..seq,v5202"
+17:58:11.686711 version@stat F·[3 1] S·102KiB[492B 102KiB] Sc·[0.75 0.00]
+17:58:11.784802 db@janitor F·6 G·0
+17:58:11.784828 db@open done T·227.483158ms

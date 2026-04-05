@@ -49,28 +49,121 @@ docker logs -f iot-backend-go
 
 
 
+echo ""
+echo "🚀 Relance du simulateur..."
 
-cd ~/iot-docker-project
+docker stop iot-simulator 2>/dev/null
+docker rm iot-simulator 2>/dev/null
 
-# Supprimer l'ancien
-docker stop iot-simulator
-docker rm iot-simulator
-docker rmi iot-simulator:latest
-
-# Reconstruire
-docker build --no-cache -f simulator.Dockerfile -t iot-simulator:latest .
-
-# Lancer
 docker run -d \
   --name iot-simulator \
-  -e GETH_NODE_1_KEY=4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318 \
-  -e GETH_NODE_2_KEY=2e083478628e8e5365a6d5a5d5f5c5a5b5b5a5c5d5e5f5a5b5c5d5e5f5a5b5c5d \
-  -e GETH_NODE_3_KEY=3c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362319 \
-  -e GETH_NODE_4_KEY=4d083478628e8e5365a6d5a5d5f5c5a5b5b5a5c5d5e5f5a5b5c5d5e5f5a5b5c5e \
+  --env-file ~/iot-simulator/.env \
   --network poa-network \
+  -v ~/iot-simulator/geth_nodes_simulator.py:/app/geth_nodes_simulator.py:ro \
   iot-simulator:latest
 
-
-
-
 docker logs -f iot-simulator
+
+
+
+
+# ============================================
+# 1. LANCER LE BACKEND GO
+# ============================================
+docker run -d \
+  --name iot-backend-go \
+  --network poa-network \
+  -p 8080:8080 \
+  -e GETH_URL=http://geth-validator1:8545 \
+  -e CONTRACT_ADDRESS=0xd9dc52ce15EDFC1b2e1d5904eaC021d583910EA9 \
+  iot-backend-go:latest
+
+# Attendre 5s que le backend démarre
+sleep 5
+
+# Vérifier que le backend est OK
+curl http://localhost:8080/api/health
+
+# ============================================
+# 2. LANCER LE SIMULATEUR
+# ============================================
+docker run -d \
+  --name iot-simulator \
+  --network poa-network \
+  -e BACKEND_URL=http://iot-backend-go:8080 \
+  -e GETH_NODE_1_KEY=0x2b1f104436276d74a927e18ac802e849eceda630f50df2e3d21c3eca4403495d \
+  -e GETH_NODE_2_KEY=0xd68443be88cf7abb2be4552e0f7636cac84836095f9298dd32e19f1eac780b80 \
+  -e GETH_NODE_3_KEY=0xcf81cc7e62cae5f6d815c6ffd5a6f3402d4a9f543ca2f54501ab66a719093799 \
+  -e GETH_NODE_4_KEY=0x5a5a7ef9a663dd57a4a3a453dd015dc51227cfb0b48d0cf715e1f215bd0860a6 \
+  -v ~/iot-simulator/geth_nodes_simulator.py:/app/geth_nodes_simulator.py:ro \
+  iot-simulator:latest
+  
+  
+  
+  
+
+# Vérifier que tout tourne
+docker ps | grep -E "(iot-backend-go|iot-simulator)"
+
+
+
+
+
+# Arrêter et supprimer les conteneurs
+docker stop iot-simulator iot-backend-go
+docker rm iot-simulator iot-backend-go
+
+# Vérifier que tout est arrêté
+docker ps | grep -E "(iot-backend-go|iot-simulator)" || echo "✅ Tout est arrêté"
+# Voir les logs en temps réel (backend)
+docker logs -f iot-backend-go
+
+# Voir les logs en temps réel (simulateur)
+docker logs -f iot-simulator
+
+# Voir les stats
+curl http://localhost:8080/api/stats/global | jq '.'
+
+# Vérifier l'état des conteneurs
+docker ps | grep -E "(iot-backend-go|iot-simulator)"
+
+
+# Script complet de redémarrage
+docker stop iot-simulator iot-backend-go 2>/dev/null
+docker rm iot-simulator iot-backend-go 2>/dev/null
+
+docker run -d \
+  --name iot-backend-go \
+  --network poa-network \
+  -p 8080:8080 \
+  -e GETH_URL=http://geth-validator1:8545 \
+  -e CONTRACT_ADDRESS=0xd9dc52ce15EDFC1b2e1d5904eaC021d583910EA9 \
+  iot-backend-go:latest
+
+sleep 5
+
+docker run -d \
+  --name iot-simulator \
+  --network poa-network \
+  -e BACKEND_URL=http://iot-backend-go:8080 \
+  -e GETH_NODE_1_KEY=0x2b1f104436276d74a927e18ac802e849eceda630f50df2e3d21c3eca4403495d \
+  -e GETH_NODE_2_KEY=0xd68443be88cf7abb2be4552e0f7636cac84836095f9298dd32e19f1eac780b80 \
+  -e GETH_NODE_3_KEY=0xcf81cc7e62cae5f6d815c6ffd5a6f3402d4a9f543ca2f54501ab66a719093799 \
+  -e GETH_NODE_4_KEY=0x5a5a7ef9a663dd57a4a3a453dd015dc51227cfb0b48d0cf715e1f215bd0860a6 \
+  -v ~/iot-simulator/geth_nodes_simulator.py:/app/geth_nodes_simulator.py:ro \
+  iot-simulator:latest
+
+echo "✅ Système redémarré !"
+docker ps | grep -E "(iot-backend-go|iot-simulator)"
+
+
+
+
+
+
+
+
+
+
+
+

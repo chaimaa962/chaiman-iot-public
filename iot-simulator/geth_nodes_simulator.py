@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Simulateur sécurisé des 4 nœuds Geth - AVEC LES VRAIES CLÉS
-"""
-
 import asyncio
 import aiohttp
 import json
@@ -19,37 +14,39 @@ load_dotenv(override=True)
 
 BN254_MODULUS = int("21888242871839275222246405745257275088548364400416034343698204186575808495617")
 
-# ============================================
-# LES 4 NŒUDS GETH AVEC LEURS VRAIES ADRESSES ET CLÉS
-# ============================================
+# LECTURE DE L'URL DU BACKEND
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
+print(f"🔗 Backend URL: {BACKEND_URL}")
+
+# LES 4 NŒUDS GETH
 GETH_NODES = [
     {
         "device_id": "GETH_NODE_1",
-        "address": "0xc6a0a22e356ce0b09246dd7a1b0c3b223d39e0ff",
+        "address": os.getenv("GETH_NODE_1_ADDRESS", "0xaf0c6bf76f11760b7ba90a852aaeadfe50ab9277"),
         "private_key": os.getenv("GETH_NODE_1_KEY"),
         "interval": 5,
-        "message": "Bonjour je suis le nœud Geth 1 (autorité PoA) - Message #{count}",
+        "message": "Heartbeat #{count} from GETH_1",
     },
     {
         "device_id": "GETH_NODE_2",
-        "address": "0x7d2b6759153a1625a757f36b63f7034dd8c095ed",
+        "address": os.getenv("GETH_NODE_2_ADDRESS", "0xc4f26670f7539138a21e7f33f2b042dbd1da6f30"),
         "private_key": os.getenv("GETH_NODE_2_KEY"),
         "interval": 10,
-        "message": "Bonjour je suis le nœud Geth 2 (autorité PoA) - Message #{count}",
+        "message": "Heartbeat #{count} from GETH_2",
     },
     {
         "device_id": "GETH_NODE_3",
-        "address": "0x56f1df7fd9da1b90616c9fc7e4faf303a1cf6830",
+        "address": os.getenv("GETH_NODE_3_ADDRESS", "0x60e69259368a740e8fe91cc61c5306234e36e01d"),
         "private_key": os.getenv("GETH_NODE_3_KEY"),
         "interval": 15,
-        "message": "Bonjour je suis le nœud Geth 3 (autorité PoA) - Message #{count}",
+        "message": "Heartbeat #{count} from GETH_3",
     },
     {
         "device_id": "GETH_NODE_4",
-        "address": "0xb1a91f75437f01983a843719ec421532f5e044ed",
+        "address": os.getenv("GETH_NODE_4_ADDRESS", "0x29885af643612e8b72123ccc3d6f527cd9321319"),
         "private_key": os.getenv("GETH_NODE_4_KEY"),
         "interval": 25,
-        "message": "Bonjour je suis le nœud Geth 4 (autorité PoA) - Message #{count}",
+        "message": "Heartbeat #{count} from GETH_4",
     }
 ]
 
@@ -135,8 +132,8 @@ class SecureGethNode:
             "nonce": nonce
         }
         try:
-            async with session.post("http://localhost:8080/api/zkp/generate-secure", 
-                                   json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+            url = f"{BACKEND_URL}/api/zkp/generate-secure"
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     proof = data.get("proof", "")
@@ -198,9 +195,8 @@ class SecureGethNode:
             }
 
             start_time = time.time()
-            async with session.post("http://localhost:8080/api/node/message-secure", 
-                                   json=payload, 
-                                   timeout=aiohttp.ClientTimeout(total=60)) as resp:
+            url = f"{BACKEND_URL}/api/node/message-secure"
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=60)) as resp:
                 elapsed = (time.time() - start_time) * 1000
                 self.stats["sent"] += 1
 
@@ -279,14 +275,16 @@ async def stats_reporter(nodes):
 async def check_backend():
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get("http://localhost:8080/api/health", timeout=5) as resp:
+            url = f"{BACKEND_URL}/api/health"
+            async with session.get(url, timeout=5) as resp:
                 return True, "✅ Backend OK" if resp.status == 200 else f"❌ Backend HTTP {resp.status}"
     except Exception as e:
         return False, f"❌ Erreur: {e}"
 
 async def main():
     print("\n" + "="*70)
-    print("🚀 SIMULATEUR 4 NŒUDS GETH - VERSION FINALE")
+    print("🚀 SIMULATEUR 4 NŒUDS GETH - VERSION CORRIGÉE")
+    print(f"🔗 Backend URL: {BACKEND_URL}")
     print("="*70)
 
     backend_ok, backend_msg = await check_backend()
