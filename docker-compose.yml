@@ -5,6 +5,75 @@ networks:
     external: true
 
 services:
+  # ============================================
+  # SERVICE IA - DÉTECTION D'ANOMALIES ML
+  # ============================================
+  ml-analyzer:
+    build:
+      context: .
+      dockerfile: ml-analyzer/Dockerfile
+    container_name: iot-ml-analyzer
+    hostname: ml-analyzer
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.100
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./ml-analyzer/models:/app/models
+      - ./ml-analyzer/logs:/app/logs
+    environment:
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=INFO
+      - THRESHOLD_MULTIPLIER=1.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # ============================================
+  # MONITORING IA POUR NŒUDS GETH
+  # ============================================
+  ml-monitor:
+    build:
+      context: .
+      dockerfile: ml-monitor/Dockerfile
+    container_name: iot-ml-monitor
+    hostname: ml-monitor
+    networks:
+      poa-network:
+        ipv4_address: 172.20.0.101
+    volumes:
+      - ./ml-monitor/logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock  # Pour accéder aux stats des conteneurs
+    environment:
+      - ML_ANALYZER_URL=http://ml-analyzer:5000
+      - GETH_NODES=validator1:8541,validator2:8542,validator3:8543,validator4:8544,fullnode1:8545,fullnode2:8546,fullnode3:8547,fullnode4:8548
+      - POLL_INTERVAL=10
+      - ANOMALY_THRESHOLD=0.7
+      - ALERT_WEBHOOK=http://iot-backend:5000/api/alerts/ml
+    depends_on:
+      - ml-analyzer
+      - validator1
+      - validator2
+      - validator3
+      - validator4
+    restart: unless-stopped
+
+  # ============================================
+  # VALIDATEURS POA
+  # ============================================
   validator1:
     image: ethereum/client-go:v1.13.15
     container_name: geth-validator1
@@ -23,9 +92,16 @@ services:
       - --http
       - --http.port=8541
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.api=eth,web3,net,admin,personal,miner,clique,txpool,debug
       - --http.corsdomain=*
       - --authrpc.port=8551
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.vhosts=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --mine
       - --miner.etherbase=0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277
       - --unlock=0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277
@@ -36,11 +112,19 @@ services:
       - --netrestrict=172.20.0.0/16
       - --nodiscover
       - --verbosity=4
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8541:8541"
       - "8551:8551"
       - "30301:30301/tcp"
       - "30301:30301/udp"
+      - "6061:6060"  # Métriques Prometheus pour ML
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=validator"
+      - "ml.node.priority=high"
     restart: unless-stopped
 
   validator2:
@@ -59,9 +143,16 @@ services:
       - --http
       - --http.port=8542
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.api=eth,web3,net,admin,personal,miner,clique,txpool,debug
       - --http.corsdomain=*
       - --authrpc.port=8552
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.vhosts=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --mine
       - --miner.etherbase=0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30
       - --unlock=0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30
@@ -72,11 +163,19 @@ services:
       - --netrestrict=172.20.0.0/16
       - --nodiscover
       - --verbosity=4
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8542:8542"
       - "8552:8552"
       - "30302:30302/tcp"
       - "30302:30302/udp"
+      - "6062:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=validator"
+      - "ml.node.priority=high"
     restart: unless-stopped
 
   validator3:
@@ -95,9 +194,16 @@ services:
       - --http
       - --http.port=8543
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.api=eth,web3,net,admin,personal,miner,clique,txpool,debug
       - --http.corsdomain=*
       - --authrpc.port=8553
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.vhosts=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --mine
       - --miner.etherbase=0x60E69259368A740e8fE91CC61c5306234E36e01d
       - --unlock=0x60E69259368A740e8fE91CC61c5306234E36e01d
@@ -108,11 +214,19 @@ services:
       - --netrestrict=172.20.0.0/16
       - --nodiscover
       - --verbosity=4
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8543:8543"
       - "8553:8553"
       - "30303:30303/tcp"
       - "30303:30303/udp"
+      - "6063:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=validator"
+      - "ml.node.priority=high"
     restart: unless-stopped
 
   validator4:
@@ -131,9 +245,16 @@ services:
       - --http
       - --http.port=8544
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.api=eth,web3,net,admin,personal,miner,clique,txpool,debug
       - --http.corsdomain=*
       - --authrpc.port=8554
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.vhosts=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --mine
       - --miner.etherbase=0x29885Af643612E8B72123CcC3D6f527cD9321319
       - --unlock=0x29885Af643612E8B72123CcC3D6f527cD9321319
@@ -144,13 +265,24 @@ services:
       - --netrestrict=172.20.0.0/16
       - --nodiscover
       - --verbosity=4
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8544:8544"
       - "8554:8554"
       - "30304:30304/tcp"
       - "30304:30304/udp"
+      - "6064:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=validator"
+      - "ml.node.priority=high"
     restart: unless-stopped
 
+  # ============================================
+  # FULLNODES
+  # ============================================
   fullnode1:
     image: ethereum/client-go:v1.13.15
     container_name: geth-fullnode1
@@ -166,16 +298,29 @@ services:
       - --http
       - --http.port=8545
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net
+      - --http.api=eth,web3,net,txpool
       - --http.corsdomain=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --syncmode=full
       - --snapshot=false
       - --netrestrict=172.20.0.0/16
       - --nodiscover
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8545:8545"
       - "30305:30305/tcp"
       - "30305:30305/udp"
+      - "6161:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=fullnode"
+      - "ml.node.priority=medium"
     restart: unless-stopped
 
   fullnode2:
@@ -193,16 +338,29 @@ services:
       - --http
       - --http.port=8546
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net
+      - --http.api=eth,web3,net,txpool
       - --http.corsdomain=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --syncmode=full
       - --snapshot=false
       - --netrestrict=172.20.0.0/16
       - --nodiscover
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8546:8546"
       - "30306:30306/tcp"
       - "30306:30306/udp"
+      - "6162:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=fullnode"
+      - "ml.node.priority=medium"
     restart: unless-stopped
 
   fullnode3:
@@ -220,16 +378,29 @@ services:
       - --http
       - --http.port=8547
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net
+      - --http.api=eth,web3,net,txpool
       - --http.corsdomain=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --syncmode=full
       - --snapshot=false
       - --netrestrict=172.20.0.0/16
       - --nodiscover
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8547:8547"
       - "30307:30307/tcp"
       - "30307:30307/udp"
+      - "6163:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=fullnode"
+      - "ml.node.priority=medium"
     restart: unless-stopped
 
   fullnode4:
@@ -247,18 +418,34 @@ services:
       - --http
       - --http.port=8548
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net
+      - --http.api=eth,web3,net,txpool
       - --http.corsdomain=*
+      - --ws
+      - --ws.port=8546
+      - --ws.addr=0.0.0.0
+      - --ws.api=eth,web3,net
+      - --ws.origins=*
       - --syncmode=full
       - --snapshot=false
       - --netrestrict=172.20.0.0/16
       - --nodiscover
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
     ports:
       - "8548:8548"
       - "30308:30308/tcp"
       - "30308:30308/udp"
+      - "6164:6060"
+    labels:
+      - "ml.monitoring.enabled=true"
+      - "ml.node.type=fullnode"
+      - "ml.node.priority=medium"
     restart: unless-stopped
 
+  # ============================================
+  # BACKEND IOT
+  # ============================================
   iot-backend:
     build: ./iot-backend
     container_name: iot-backend
@@ -269,5 +456,9 @@ services:
       - "5000:5000"
     environment:
       - BLOCKCHAIN_RPC=http://172.20.0.11:8541
+      - ML_ANALYZER_URL=http://ml-analyzer:5000
+      - ML_MONITOR_URL=http://ml-monitor:8080
     depends_on:
       - validator1
+      - ml-analyzer
+    restart: unless-stopped

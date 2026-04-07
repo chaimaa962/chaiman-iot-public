@@ -2032,3 +2032,43 @@
 17:58:10.980196 db@janitor F·5 G·1
 17:58:10.980255 db@janitor removing table-468
 17:58:10.980370 db@open done T·446.220723ms
+=============== Apr 5, 2026 (UTC) ===============
+19:18:22.655537 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+19:18:22.679108 version@stat F·[1 1] S·90KiB[164B 90KiB] Sc·[0.25 0.00]
+19:18:22.681442 db@open opening
+19:18:22.681515 journal@recovery F·1
+19:18:22.682139 journal@recovery recovering @473
+19:18:22.822063 memdb@flush created L0@475 N·1 S·164B "loc..seq,v4762":"loc..seq,v4762"
+19:18:22.829398 version@stat F·[2 1] S·90KiB[328B 90KiB] Sc·[0.50 0.00]
+19:18:23.083663 db@janitor F·5 G·0
+19:18:23.083685 db@open done T·402.229458ms
+=============== Apr 5, 2026 (UTC) ===============
+19:27:46.725023 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+19:27:46.754022 version@stat F·[2 1] S·90KiB[328B 90KiB] Sc·[0.50 0.00]
+19:27:46.759913 db@open opening
+19:27:46.760003 journal@recovery F·1
+19:27:46.796451 journal@recovery recovering @476
+19:27:46.881130 memdb@flush created L0@478 N·1 S·164B "loc..seq,v4764":"loc..seq,v4764"
+19:27:47.121619 version@stat F·[3 1] S·90KiB[492B 90KiB] Sc·[0.75 0.00]
+19:27:47.467776 db@janitor F·6 G·0
+19:27:47.467798 db@open done T·707.868256ms
+19:31:25.761212 db@close closing
+19:31:25.791361 db@close done T·30.173796ms
+=============== Apr 7, 2026 (UTC) ===============
+19:59:09.717402 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+19:59:09.803606 version@stat F·[3 1] S·90KiB[492B 90KiB] Sc·[0.75 0.00]
+19:59:09.806500 db@open opening
+19:59:09.835180 journal@recovery F·1
+19:59:09.909792 journal@recovery recovering @479
+19:59:10.031984 memdb@flush created L0@481 N·1 S·164B "loc..seq,v4766":"loc..seq,v4766"
+19:59:10.054314 version@stat F·[4 1] S·90KiB[656B 90KiB] Sc·[1.00 0.00]
+19:59:10.325242 db@janitor F·7 G·0
+19:59:10.325268 db@open done T·518.716287ms
+19:59:10.326906 table@compaction L0·4 -> L1·1 S·90KiB Q·4767
+19:59:10.489860 table@build created L1@484 N·2854 S·90KiB "loc..seq,v4766":"version,v1"
+19:59:10.489933 version@stat F·[0 1] S·90KiB[0B 90KiB] Sc·[0.00 0.00]
+19:59:10.547848 table@compaction committed F-4 S-656B Ke·0 D·4 T·220.898014ms
+19:59:10.548001 table@remove removed @478
+19:59:10.563092 table@remove removed @475
+19:59:10.563229 table@remove removed @472
+19:59:10.563286 table@remove removed @471
