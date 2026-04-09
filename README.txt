@@ -16,11 +16,11 @@ git clone https://github.com/chaimaa962/iot-project.git
 cd iot-project
 chmod +x *.sh
 
----
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 🖥️ TERMINAL 1 - Blockchain
 
-cd iot-docker-project
+cd iot-project
 
 # 1. Démarrer les conteneurs blockchain
 docker-compose up -d validator1 validator2 validator3 validator4
@@ -65,22 +65,22 @@ done
 
 # Résultat attendu : Port 8541: 3 peers / Port 8542: 3 peers / Port 8543: 3 peers / Port 8544: 3 peers
 
----
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 🖥️ TERMINAL 2 - Backend Go + ZKP
 
-cd iot-docker-project/iot-backend
+cd iot-project/iot-backend
 
 # Lancer le backend sur le port 8080
 PORT=8080 go run ./cmd/api/main_secure.go
 
 # Résultat attendu : ✅ GETH_NODE_1 déjà enregistré ... 🚀 Serveur SÉCURISÉ démarré (ECDSA + ZKP) [port 8080]
 
----
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 🖥️ TERMINAL 3 - Simulateur IoT
 
-cd iot-docker-project
+cd iot-project
 
 # Charger les clés privées
 export $(cat .env | xargs 2>/dev/null)
@@ -90,11 +90,11 @@ python3 geth_nodes_simulator.py
 
 # Résultat attendu : 🔐 [GETH_NODE_1] AUTHENTIFIÉ ✅ [GETH_NODE_1] #1 | 🔷 RÉELLE | Bloc #4583
 
----
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 🖥️ TERMINAL 4 - Dashboard
 
-cd iot-docker-proejct/iot-dashboard
+cd iot-project/iot-dashboard
 
 # Installer les dépendances (première fois uniquement)
 npm install
@@ -104,7 +104,7 @@ npm start
 
 # Le dashboard s'ouvre sur http://localhost:3000
 
----
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## 🌐 Points d'Accès
 
