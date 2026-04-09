@@ -5,42 +5,91 @@
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](https://golang.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16-FF6F00?logo=tensorflow)](https://www.tensorflow.org/)
-[![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python)](https://www.python.org/)
-[![Kaggle](https://img.shields.io/badge/Kaggle-Model-20BEFF?logo=kaggle)](https://www.kaggle.com/)
 
 ---
 
-## 📋 Table of Contents
+## 📋 Guide de Démarrage - Copier-Coller dans 4 Terminaux
 
-- [Overview](#-overview)
-- [Complete Architecture](#-complete-architecture)
-- [Key Features](#-key-features)
-- [Prerequisites](#-prerequisites)
-- [🚀 One-Command Startup](#-one-command-startup)
-- [Manual Startup (Step-by-Step)](#-manual-startup-step-by-step)
-- [Access Points](#-access-points)
-- [AI Model Details](#-ai-model-details-lstm-autoencoder)
-- [Testing the System](#-testing-the-system)
-- [Project Structure](#-project-structure)
-- [Troubleshooting](#-troubleshooting)
-- [Technologies Used](#-technologies-used)
-- [Author](#-author)
+### 📥 Étape 0 - Cloner le projet
 
----
+```bash
+git clone https://github.com/chaimaa962/iot-project.git
+cd iot-project
+chmod +x *.sh
 
-## 🌟 Overview
 
-This project is a **complete, production-ready IoT security platform** that integrates:
+cd iot-docker-project 
 
-| Component | Technology | Description |
-|-----------|------------|-------------|
-| **Blockchain** | Geth PoA (Clique) | 4 validator nodes, private network |
-| **Authentication** | ECDSA + ZKP (Groth16/BN254) | Privacy-preserving device auth |
-| **AI Detection** | LSTM Autoencoder | 93.6% F1 Score, 100% ROC-AUC |
-| **Backend** | Go (Golang) | REST API with ZKP verification |
-| **Dashboard** | React + MUI | Glassmorphism real-time UI |
-| **Simulator** | Python | 4 IoT nodes with ECDSA signing |
+# 1. Démarrer les conteneurs blockchain
+docker-compose up -d validator1 validator2 validator3 validator4
 
----
+# 2. Attendre 30 secondes que les nœuds démarrent
+sleep 30
 
-## 🏗 Complete Architecture
+# 3. Connecter les validateurs entre eux
+./demarer.sh# Nettoyer les enodes (sans ?discport=0)
+enode1="enode://9f07a02efe326bc16b46e356acf2960fec0a7e835b2f7fb061bad442b0d05084682fa0b3005e71c4d4baaecd65e6a33b726a88c5787dafbcea30bc29adc59481@172.20.0.11:30301"
+enode2="enode://740eee8689016b4b3b515b223c7c5ea58da5a0f0c7bc72b5dca3fae2bc8e4ed3677e5fbb624c0438862a325ae1a385f9a843804991ab1878711640a9c6ba066d@172.20.0.12:30302"
+enode3="enode://ab091bee69aea0ac1da14ed979e60c0ff396a6f28842ff40a83417f625c339e37876ecc1e4a5dee70d265e14c0ca9507100b680acfcb175acefb38b8fda003e6@172.20.0.13:30303"
+enode4="enode://9e67d0919200a26220cd7d18f3d2f2fe6628cb4059ee7671a129f091e3681a6841df80c252ac64aaeffc6569ce13572e9c66e25711489e2070ed6f7d56727945@172.20.0.14:30304"
+
+# Connecter
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
+curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+
+# Vérifier
+sleep 3
+for port in 8541 8542 8543 8544; do
+    count=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_peers","params":[],"id":1}' | jq '.result | length')
+    echo "Port $port: $count peers"
+done
+cd iot-project/iot-backend
+
+# Lancer le backend sur le port 8080
+PORT=8080 go run ./cmd/api/main_secure.go
+cd iot-project
+
+# Charger les clés privées
+export $(cat .env | xargs 2>/dev/null)
+
+# Démarrer le simulateur (4 nœuds)
+python3 geth_nodes_simulator.py
+
+
+cd iot-project/iot-dashboard
+
+# Installer les dépendances (première fois uniquement)
+npm install
+
+# Démarrer le dashboard
+npm start🌐 Points d'Accès
+Service	URL
+Dashboard	http://localhost:3000
+Backend API	http://localhost:8080/api/health
+Service IA	http://localhost:5001/health
+Blockchain RPC	http://localhost:8541
+
+
+
+
+
+
+
+
+
+
+
+
