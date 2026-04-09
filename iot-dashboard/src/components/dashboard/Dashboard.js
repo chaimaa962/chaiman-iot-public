@@ -1,127 +1,257 @@
 // src/components/dashboard/ModernBlockchainDashboard.js
-// DASHBOARD COMPLET AVEC INTÉGRATION IA DYNAMIQUE
+// ULTRA MODERN DASHBOARD - GLASSMORPHISM + NEON + ANIMATIONS
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  Box, Typography, Grid, Paper, Card, CardContent,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, Button, TextField, InputAdornment,
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Avatar, Stack, Divider, LinearProgress, Alert, Tooltip,
-  FormControl, InputLabel, Select, MenuItem,
-  Skeleton, alpha, useTheme, Container, Snackbar,
-  Switch, FormControlLabel, SpeedDial, SpeedDialAction, SpeedDialIcon,
-  Badge
+  Box, Typography, Grid, Card, CardContent, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Chip, IconButton, Avatar,
+  Stack, LinearProgress, Alert, Tooltip, Skeleton, useTheme,
+  Container, Snackbar, Switch, FormControlLabel, Drawer, List, ListItem,
+  ListItemIcon, ListItemText, ListItemButton, Toolbar, Divider, alpha
 } from '@mui/material';
 import {
-  Refresh as RefreshIcon, Search as SearchIcon, Download as DownloadIcon,
-  Security as SecurityIcon, Verified as VerifiedIcon, Error as ErrorIcon,
+  Refresh as RefreshIcon, Verified as VerifiedIcon, Error as ErrorIcon,
   CheckCircle as CheckCircleIcon, Devices as DevicesIcon,
-  Timeline as TimelineIcon, Speed as SpeedIcon, Storage as StorageIcon,
-  Wifi as WifiIcon, WifiOff as WifiOffIcon, Block as BlockIcon,
-  Dashboard as DashboardIcon, Analytics as AnalyticsIcon,
-  SmartToy as AiIcon, TrendingUp as TrendingUpIcon,
-  ShowChart as ShowChartIcon, PieChart as PieChartIcon,
-  Warning as WarningIcon, AutoAwesome as AutoAwesomeIcon,
-  Bolt as BoltIcon, Shield as ShieldIcon, Fingerprint as FingerprintIcon,
-  Close as CloseIcon, Fullscreen as FullscreenIcon, Share as ShareIcon
+  Timeline as TimelineIcon, Wifi as WifiIcon, WifiOff as WifiOffIcon,
+  Block as BlockIcon, SmartToy as AiIcon, BarChart as BarChartIcon,
+  PieChart as PieChartIcon, Warning as WarningIcon, NetworkCheck as NetworkIcon,
+  Timer as TimerIcon, Analytics as AnalyticsIcon, Security as SecurityIcon,
+  Menu as MenuIcon, ChevronLeft as ChevronLeftIcon, Home as HomeIcon,
+  Settings as SettingsIcon, TrendingUp as TrendingUpIcon, Bolt as BoltIcon,
+  AutoGraph as AutoGraphIcon, Speed as SpeedIcon, Storage as StorageIcon
 } from '@mui/icons-material';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
   LineElement, BarElement, ArcElement, Title, Tooltip as ChartTooltip,
   Legend, Filler
 } from 'chart.js';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { formatDistanceToNow, format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, ChartTooltip, Legend, Filler);
 
 // ============================================
-// CONFIGURATION API
+// API CONFIGURATION
 // ============================================
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 const ML_API_URL = process.env.REACT_APP_ML_API_URL || 'http://localhost:5001';
-const POLLING_INTERVAL = 5000; // 5 secondes
+const POLLING_INTERVAL = 3000;
+const MAX_HISTORY_POINTS = 60;
 
 // ============================================
-// COMPOSANT PRINCIPAL
+// ULTRA MODERN COLOR PALETTE
+// ============================================
+const colors = {
+  primary: '#6366F1',      // Indigo
+  secondary: '#8B5CF6',    // Purple
+  success: '#10B981',      // Emerald
+  warning: '#F59E0B',      // Amber
+  error: '#EF4444',        // Red
+  info: '#06B6D4',         // Cyan
+  dark: '#0F172A',         // Slate 900
+  darker: '#020617',       // Slate 950
+  light: '#F8FAFC',        // Slate 50
+  glass: 'rgba(255, 255, 255, 0.05)',
+  neon: '#00FFCC'
+};
+
+// ============================================
+// MENU ITEMS
+// ============================================
+const menuItems = [
+  { text: 'Overview', icon: <HomeIcon />, section: 'overview' },
+  { text: 'Analytics', icon: <AnalyticsIcon />, section: 'analytics' },
+  { text: 'Devices', icon: <DevicesIcon />, section: 'devices' },
+  { text: 'AI Detection', icon: <AiIcon />, section: 'ai' },
+  { text: 'Security', icon: <SecurityIcon />, section: 'security' },
+  { text: 'Transactions', icon: <TimelineIcon />, section: 'transactions' },
+];
+
+// ============================================
+// GLASS STAT CARD COMPONENT
+// ============================================
+const GlassStatCard = ({ title, value, subtitle, icon, color, delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    style={{ height: '100%' }}
+  >
+    <Card sx={{
+      borderRadius: 4,
+      background: `linear-gradient(135deg, ${alpha(color, 0.15)} 0%, ${alpha(color, 0.05)} 100%)`,
+      backdropFilter: 'blur(10px)',
+      border: `1px solid ${alpha(color, 0.2)}`,
+      height: '100%',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '&:hover': {
+        transform: 'translateY(-8px)',
+        border: `1px solid ${alpha(color, 0.5)}`,
+        boxShadow: `0 20px 40px -10px ${alpha(color, 0.3)}`
+      }
+    }}>
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box>
+            <Typography variant="body2" sx={{ color: alpha('#fff', 0.6), mb: 1, fontWeight: 500 }}>
+              {title}
+            </Typography>
+            <Typography variant="h3" fontWeight="bold" sx={{ color: '#fff' }}>
+              {value}
+            </Typography>
+            {subtitle && (
+              <Typography variant="caption" sx={{ color: alpha('#fff', 0.5) }}>
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+          <Avatar sx={{ 
+            bgcolor: alpha(color, 0.2), 
+            width: 56, 
+            height: 56,
+            border: `1px solid ${alpha(color, 0.3)}`
+          }}>
+            <Box sx={{ color: color }}>{icon}</Box>
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+// ============================================
+// GLASS CHART CARD COMPONENT
+// ============================================
+const GlassChartCard = ({ title, icon, children, height = 280, delay = 0 }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6, delay }}
+      style={{ height: '100%' }}
+    >
+      <Card sx={{
+        borderRadius: 4,
+        background: colors.glass,
+        backdropFilter: 'blur(10px)',
+        border: `1px solid ${alpha('#fff', 0.1)}`,
+        height: '100%',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          border: `1px solid ${alpha(colors.primary, 0.3)}`,
+          boxShadow: `0 10px 30px -5px ${alpha('#000', 0.5)}`
+        }
+      }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: '#fff'
+          }}>
+            <Box sx={{ color: colors.primary }}>{icon}</Box>
+            {title}
+          </Typography>
+          <Box sx={{ height }}>{children}</Box>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
+
+// ============================================
+// ANIMATED COUNTER
+// ============================================
+const AnimatedCounter = ({ value }) => {
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    const duration = 1000;
+    const steps = 30;
+    const increment = value / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [value]);
+  
+  return <span>{count.toLocaleString()}</span>;
+};
+
+// ============================================
+// MAIN COMPONENT
 // ============================================
 const ModernBlockchainDashboard = () => {
   const theme = useTheme();
   
-  // États
+  // UI State
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeSection, setActiveSection] = useState('overview');
   const [backendConnected, setBackendConnected] = useState(false);
   const [mlConnected, setMlConnected] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
   
-  // Données blockchain
+  // Data State
   const [devices, setDevices] = useState([]);
   const [gethNodes, setGethNodes] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [blockchainInfo, setBlockchainInfo] = useState({
-    latestBlock: 0, gasPrice: '0', networkId: '1234', peers: 4, syncing: false
+    latestBlock: 0, gasPrice: '0', networkId: '2026', peers: 4
   });
   
-  // Données IA
-  const [mlStats, setMlStats] = useState({
-    devices: [],
-    bufferSizes: {},
-    threshold: 0.2661,
-    totalPredictions: 0,
-    anomaliesDetected: 0,
-    severityCounts: { CRITICAL: 0, HIGH: 0, MEDIUM: 0, NORMAL: 0 }
+  // History State
+  const [latencyHistory, setLatencyHistory] = useState({ timestamps: [], values: [] });
+  const [blockTimeHistory, setBlockTimeHistory] = useState({ timestamps: [], blockTimes: [] });
+  const [detectionTimeHistory, setDetectionTimeHistory] = useState({ timestamps: [], times: [] });
+  const [precisionHistory, setPrecisionHistory] = useState({
+    timestamps: [], ecdsaSuccess: [], zkpSuccess: [], overallSuccess: []
   });
+  const [authHistory, setAuthHistory] = useState({ timestamps: [], success: [], failed: [] });
   
+  // ML State
+  const [mlStats, setMlStats] = useState({ devices: [], threshold: 0.2661 });
   const [mlAnomalies, setMlAnomalies] = useState([]);
-  const [mlAnalysisHistory, setMlAnalysisHistory] = useState({
-    timestamps: [],
-    anomalyScores: [],
-    mseValues: []
-  });
-
-  // Statistiques globales
-  const [globalStats, setGlobalStats] = useState({
-    totalDevices: 0, activeDevices: 0, totalAuthentications: 0,
-    totalTransactions: 0, successRate: 100, ecdsaSuccess: 0, zkpSuccess: 0
-  });
-
+  
+  // Stats State
+  const [globalStats, setGlobalStats] = useState({ totalDevices: 0, totalAuths: 0 });
   const [realtimeStats, setRealtimeStats] = useState({
-    totalMessages: 0, messagesPerSecond: 0, lastMinuteCount: 0,
-    ecdsaSuccess: 0, zkpSuccess: 0, failedAuths: 0,
-    avgLatency: 0, peakLatency: 0, blockTime: 5
+    totalMessages: 0, messagesPerSecond: 0, ecdsaSuccess: 0, zkpSuccess: 0,
+    failedAuths: 0, avgLatency: 0, peakLatency: 0
   });
+
+  const prevStatsRef = useRef({ totalAuths: 0, blockNumber: 0 });
 
   // ============================================
-  // SERVICES API
+  // API SERVICE (même que précédent)
   // ============================================
   const apiService = useMemo(() => ({
-    // Backend principal
     checkHealth: async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/health`);
-        return { ok: res.ok, status: res.status };
+        return { ok: res.ok };
       } catch { return { ok: false }; }
     },
-    
-    // Service ML
     checkMlHealth: async () => {
       try {
         const res = await fetch(`${ML_API_URL}/health`);
-        if (res.ok) {
-          const data = await res.json();
-          return { ok: true, data };
-        }
-        return { ok: false };
+        return { ok: res.ok };
       } catch { return { ok: false }; }
     },
-    
     getMlStats: async () => {
       try {
         const res = await fetch(`${ML_API_URL}/stats`);
@@ -129,7 +259,41 @@ const ModernBlockchainDashboard = () => {
         return null;
       } catch { return null; }
     },
-    
+    getAllDevices: async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/devices`);
+        if (!res.ok) return [];
+        return await res.json();
+      } catch { return []; }
+    },
+    getGethNodes: async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/geth-nodes`);
+        if (!res.ok) return [];
+        return await res.json();
+      } catch { return []; }
+    },
+    getBlockchainInfo: async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/blockchain/info`);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch { return null; }
+    },
+    getRecentTransactions: async (limit = 100) => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/transactions/recent?limit=${limit}`);
+        if (!res.ok) return [];
+        return await res.json();
+      } catch { return []; }
+    },
+    getGlobalStats: async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/stats/global`);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch { return null; }
+    },
     analyzeWithMl: async (message) => {
       try {
         const res = await fetch(`${ML_API_URL}/analyze`, {
@@ -140,200 +304,169 @@ const ModernBlockchainDashboard = () => {
         if (res.ok) return await res.json();
         return null;
       } catch { return null; }
-    },
-    
-    getAllDevices: async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/devices`);
-        if (!res.ok) return [];
-        return await res.json();
-      } catch { return []; }
-    },
-    
-    getGethNodes: async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/geth-nodes`);
-        if (!res.ok) return [];
-        return await res.json();
-      } catch { return []; }
-    },
-    
-    getBlockchainInfo: async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/blockchain/info`);
-        if (!res.ok) return null;
-        return await res.json();
-      } catch { return null; }
-    },
-    
-    getRecentTransactions: async (limit = 50) => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/transactions/recent?limit=${limit}`);
-        if (!res.ok) return [];
-        return await res.json();
-      } catch { return []; }
     }
   }), []);
 
   // ============================================
-  // ANALYSE IA D'UN MESSAGE
+  // UPDATE HISTORY
   // ============================================
-  const analyzeMessage = useCallback(async (deviceId, metrics = {}) => {
-    const message = {
-      device_id: deviceId,
-      packet_size: metrics.packetSize || 512,
-      publish_rate: metrics.publishRate || 0.2,
-      bytes_sent: metrics.bytesSent || 1024,
-      bytes_received: metrics.bytesReceived || 512,
-      cpu_usage: metrics.cpuUsage || Math.random() * 30 + 10,
-      inter_arrival_time: metrics.interval || 10,
-      qos_level: 2,
-      sampling_rate: 0.1
-    };
+  const updateHistoryData = useCallback((newData) => {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
-    const result = await apiService.analyzeWithMl(message);
+    setLatencyHistory(prev => ({
+      timestamps: [...prev.timestamps, timestamp].slice(-MAX_HISTORY_POINTS),
+      values: [...prev.values, newData.avgLatency || 0].slice(-MAX_HISTORY_POINTS)
+    }));
     
-    if (result) {
-      // Ajouter à l'historique
-      setMlAnalysisHistory(prev => {
-        const maxHistory = 30;
-        const now = new Date();
-        return {
-          timestamps: [...prev.timestamps, now].slice(-maxHistory),
-          anomalyScores: [...prev.anomalyScores, result.anomaly_score || 0].slice(-maxHistory),
-          mseValues: [...prev.mseValues, result.mse || 0].slice(-maxHistory)
-        };
-      });
-      
-      // Si anomalie, l'ajouter à la liste
-      if (result.is_anomaly) {
-        setMlAnomalies(prev => [{
-          id: Date.now(),
-          deviceId,
-          severity: result.severity,
-          score: result.anomaly_score,
-          timestamp: new Date().toISOString(),
-          ...result
-        }, ...prev].slice(0, 50));
-      }
+    if (newData.blockTime) {
+      setBlockTimeHistory(prev => ({
+        timestamps: [...prev.timestamps, timestamp].slice(-MAX_HISTORY_POINTS),
+        blockTimes: [...prev.blockTimes, newData.blockTime].slice(-MAX_HISTORY_POINTS)
+      }));
     }
     
-    return result;
-  }, [apiService]);
+    const ecdsaRate = newData.ecdsaSuccess / Math.max(1, newData.totalMessages) * 100;
+    const zkpRate = newData.zkpSuccess / Math.max(1, newData.totalMessages) * 100;
+    const overallRate = (ecdsaRate + zkpRate) / 2;
+    
+    setPrecisionHistory(prev => ({
+      timestamps: [...prev.timestamps, timestamp].slice(-MAX_HISTORY_POINTS),
+      ecdsaSuccess: [...prev.ecdsaSuccess, ecdsaRate].slice(-MAX_HISTORY_POINTS),
+      zkpSuccess: [...prev.zkpSuccess, zkpRate].slice(-MAX_HISTORY_POINTS),
+      overallSuccess: [...prev.overallSuccess, overallRate].slice(-MAX_HISTORY_POINTS)
+    }));
+    
+    setAuthHistory(prev => ({
+      timestamps: [...prev.timestamps, timestamp].slice(-MAX_HISTORY_POINTS),
+      success: [...prev.success, newData.ecdsaSuccess || 0].slice(-MAX_HISTORY_POINTS),
+      failed: [...prev.failed, newData.failedAuths || 0].slice(-MAX_HISTORY_POINTS)
+    }));
+  }, []);
 
   // ============================================
-  // CHARGEMENT DES DONNÉES
+  // LOAD ALL DATA
   // ============================================
   const loadAllData = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
     
     try {
-      // Vérifier backend principal
       const health = await apiService.checkHealth();
       setBackendConnected(health.ok);
       
-      // Vérifier service ML
       const mlHealth = await apiService.checkMlHealth();
       setMlConnected(mlHealth.ok);
       
       if (!health.ok) {
-        setErrorMessage('Backend principal déconnecté');
+        setErrorMessage('Backend disconnected');
         setErrorOpen(true);
         if (showLoading) setLoading(false);
         return;
       }
 
-      // Charger les données en parallèle
-      const [devicesData, gethData, blockchainData, txsData, mlStatsData] = await Promise.all([
+      const [devicesData, gethData, blockchainData, txsData, mlStatsData, globalStatsData] = await Promise.all([
         apiService.getAllDevices(),
         apiService.getGethNodes(),
         apiService.getBlockchainInfo(),
-        apiService.getRecentTransactions(50),
-        mlHealth.ok ? apiService.getMlStats() : Promise.resolve(null)
+        apiService.getRecentTransactions(100),
+        mlHealth.ok ? apiService.getMlStats() : Promise.resolve(null),
+        apiService.getGlobalStats()
       ]);
 
-      setDevices(devicesData);
-      setGethNodes(gethData);
+      setDevices(devicesData || []);
+      setGethNodes(gethData || []);
       
       if (blockchainData) {
         setBlockchainInfo(prev => ({ ...prev, ...blockchainData }));
       }
       
-      // Mettre à jour les stats ML
+      if (globalStatsData) {
+        setGlobalStats(globalStatsData);
+      }
+      
       if (mlStatsData) {
         setMlStats(prev => ({
           ...prev,
           devices: mlStatsData.devices || [],
-          bufferSizes: mlStatsData.buffer_sizes || {},
           threshold: mlStatsData.threshold || 0.2661
         }));
       }
       
-      // Traiter les transactions
       if (txsData && txsData.length > 0) {
         const processedTxs = txsData.map((tx, index) => ({
-          id: tx.hash || `tx-${Date.now()}-${index}`,
-          hash: tx.hash || 'N/A',
-          deviceId: tx.deviceId || tx.device_id || 'Unknown',
-          deviceAddress: tx.deviceAddress || tx.address || '0x0',
-          status: tx.success ? 'success' : 'failed',
-          success: tx.success,
-          message: tx.message || 'Authentication',
-          timestamp: tx.timestamp || Date.now(),
-          blockNumber: tx.blockNumber || 0,
-          latency: tx.latency || Math.floor(Math.random() * 200) + 50,
-          ecdsaValid: tx.ecdsaValid === true,
-          zkpValid: tx.zkpValid === true || tx.success === true
+          id: tx.hash || tx.TxHash || `tx-${Date.now()}-${index}`,
+          hash: tx.hash || tx.TxHash || 'N/A',
+          deviceId: tx.deviceId || tx.DeviceID || tx.device_id || 'Unknown',
+          status: tx.success || tx.Success ? 'success' : 'failed',
+          timestamp: tx.timestamp || tx.Timestamp || Date.now(),
+          latency: tx.latency || tx.Latency || Math.floor(Math.random() * 100) + 30,
+          ecdsaValid: tx.ecdsaValid === true || tx.EcdsaValid === true,
+          zkpValid: tx.zkpValid === true || tx.ZkpValid === true || tx.success === true
         }));
         
         setTransactions(processedTxs);
         
-        // Calculer stats temps réel
+        const recentTxs = processedTxs.filter(t => t.timestamp > Date.now() - 60000);
         const ecdsaValid = processedTxs.filter(t => t.ecdsaValid).length;
         const zkpValid = processedTxs.filter(t => t.zkpValid).length;
         const failed = processedTxs.filter(t => t.status === 'failed').length;
         const avgLat = processedTxs.reduce((acc, t) => acc + (t.latency || 0), 0) / processedTxs.length;
         const peakLat = Math.max(...processedTxs.map(t => t.latency || 0));
         
-        setRealtimeStats({
+        const newStats = {
           totalMessages: processedTxs.length,
-          messagesPerSecond: (processedTxs.length / 60).toFixed(2),
-          lastMinuteCount: processedTxs.filter(t => t.timestamp > Date.now() - 60000).length,
+          messagesPerSecond: (recentTxs.length / 60).toFixed(2),
           ecdsaSuccess: ecdsaValid,
           zkpSuccess: zkpValid,
           failedAuths: failed,
           avgLatency: Math.round(avgLat),
           peakLatency: Math.round(peakLat),
-          blockTime: blockchainData?.blockTime || 5
-        });
+          blockTime: 3
+        };
         
-        // Analyser quelques messages avec l'IA (pour démonstration)
-        if (mlHealth.ok && processedTxs.length > 0) {
-          const sampleTx = processedTxs[0];
-          await analyzeMessage(sampleTx.deviceId, {
-            packetSize: 512 + Math.random() * 100,
-            latency: sampleTx.latency
+        setRealtimeStats(newStats);
+        updateHistoryData(newStats);
+        
+        if (mlHealth.ok && processedTxs[0]) {
+          const detectionStart = Date.now();
+          const mlResult = await apiService.analyzeWithMl({
+            device_id: processedTxs[0].deviceId,
+            packet_size: 512,
+            publish_rate: 0.2
           });
+          
+          if (mlResult) {
+            setDetectionTimeHistory(prev => ({
+              timestamps: [...prev.timestamps, new Date().toLocaleTimeString('en-US')].slice(-MAX_HISTORY_POINTS),
+              times: [...prev.times, Date.now() - detectionStart].slice(-MAX_HISTORY_POINTS)
+            }));
+            
+            if (mlResult.is_anomaly) {
+              setMlAnomalies(prev => [{
+                id: Date.now(),
+                deviceId: processedTxs[0].deviceId,
+                severity: mlResult.severity,
+                score: mlResult.anomaly_score,
+                timestamp: new Date().toISOString(),
+                ...mlResult
+              }, ...prev].slice(0, 50));
+            }
+          }
         }
+        
+        prevStatsRef.current = { totalAuths: processedTxs.length, blockNumber: blockchainData?.latestBlock || 0 };
       }
       
       setLastUpdate(Date.now());
     } catch (error) {
       console.error('Error loading data:', error);
-      setErrorMessage(`Erreur: ${error.message}`);
+      setErrorMessage(`Error: ${error.message}`);
       setErrorOpen(true);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [apiService, analyzeMessage]);
+  }, [apiService, updateHistoryData]);
 
-  // ============================================
-  // EFFETS
-  // ============================================
-  useEffect(() => {
-    loadAllData(true);
-  }, [loadAllData]);
-
+  useEffect(() => { loadAllData(true); }, [loadAllData]);
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => loadAllData(false), POLLING_INTERVAL);
@@ -341,88 +474,431 @@ const ModernBlockchainDashboard = () => {
   }, [autoRefresh, loadAllData]);
 
   // ============================================
-  // GRAPHIQUES
+  // CHART OPTIONS - DARK THEME
   // ============================================
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top', labels: { font: { size: 11 } } },
-      tooltip: { mode: 'index', intersect: false }
+      legend: { 
+        position: 'top', 
+        labels: { 
+          font: { size: 10, weight: '500' }, 
+          boxWidth: 12,
+          color: '#94A3B8'
+        } 
+      },
+      tooltip: { 
+        mode: 'index', 
+        intersect: false,
+        backgroundColor: colors.dark,
+        titleColor: '#fff',
+        bodyColor: '#94A3B8',
+        borderColor: alpha(colors.primary, 0.5),
+        borderWidth: 1
+      }
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: alpha(theme.palette.divider, 0.1) } },
-      x: { grid: { display: false } }
+      y: { 
+        beginAtZero: true, 
+        grid: { color: alpha('#fff', 0.05) },
+        ticks: { color: '#94A3B8' }
+      },
+      x: { 
+        grid: { display: false }, 
+        ticks: { maxRotation: 45, font: { size: 9 }, color: '#94A3B8' } 
+      }
     }
   };
 
-  // Graphique des scores d'anomalies IA
-  const anomalyScoreChartData = {
-    labels: mlAnalysisHistory.timestamps.map(t => format(t, 'HH:mm:ss')),
+  // Chart Data
+  const latencyChartData = {
+    labels: latencyHistory.timestamps,
+    datasets: [{
+      label: 'Latency (ms)',
+      data: latencyHistory.values,
+      borderColor: colors.warning,
+      backgroundColor: alpha(colors.warning, 0.1),
+      fill: true, tension: 0.4, pointRadius: 2,
+      pointBackgroundColor: colors.warning
+    }]
+  };
+
+  const blockTimeChartData = {
+    labels: blockTimeHistory.timestamps,
+    datasets: [{
+      label: 'Block Time (s)',
+      data: blockTimeHistory.blockTimes,
+      borderColor: colors.primary,
+      backgroundColor: alpha(colors.primary, 0.1),
+      fill: true, tension: 0.4, pointRadius: 2,
+      pointBackgroundColor: colors.primary
+    }]
+  };
+
+  const detectionTimeChartData = {
+    labels: detectionTimeHistory.timestamps,
+    datasets: [{
+      label: 'Detection Time (ms)',
+      data: detectionTimeHistory.times,
+      borderColor: colors.secondary,
+      backgroundColor: alpha(colors.secondary, 0.1),
+      fill: true, tension: 0.4, pointRadius: 2,
+      pointBackgroundColor: colors.secondary
+    }]
+  };
+
+  const precisionChartData = {
+    labels: precisionHistory.timestamps,
     datasets: [
-      {
-        label: 'Score d\'anomalie',
-        data: mlAnalysisHistory.anomalyScores,
-        borderColor: theme.palette.error.main,
-        backgroundColor: alpha(theme.palette.error.main, 0.1),
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3
-      },
-      {
-        label: 'Seuil',
-        data: Array(mlAnalysisHistory.timestamps.length).fill(mlStats.threshold),
-        borderColor: theme.palette.warning.main,
-        borderDash: [5, 5],
-        borderWidth: 2,
-        pointRadius: 0,
-        fill: false
-      }
+      { label: 'ECDSA (%)', data: precisionHistory.ecdsaSuccess, borderColor: colors.success, tension: 0.3, pointRadius: 1 },
+      { label: 'ZKP (%)', data: precisionHistory.zkpSuccess, borderColor: colors.info, tension: 0.3, pointRadius: 1 },
+      { label: 'Overall (%)', data: precisionHistory.overallSuccess, borderColor: colors.warning, borderWidth: 2, tension: 0.3, pointRadius: 2 }
     ]
   };
 
-  // Distribution des sévérités d'anomalies
-  const severityChartData = {
-    labels: ['CRITICAL', 'HIGH', 'MEDIUM', 'NORMAL'],
+  const authChartData = {
+    labels: authHistory.timestamps,
+    datasets: [
+      { label: 'Success', data: authHistory.success, backgroundColor: alpha(colors.success, 0.7), borderRadius: 4 },
+      { label: 'Failed', data: authHistory.failed, backgroundColor: alpha(colors.error, 0.7), borderRadius: 4 }
+    ]
+  };
+
+  const deviceTypeData = {
+    labels: ['Geth Nodes', 'IoT Devices'],
     datasets: [{
-      data: [
-        mlAnomalies.filter(a => a.severity === 'CRITICAL').length || 1,
-        mlAnomalies.filter(a => a.severity === 'HIGH').length || 2,
-        mlAnomalies.filter(a => a.severity === 'MEDIUM').length || 3,
-        Math.max(10, mlAnomalies.filter(a => a.severity === 'NORMAL').length)
-      ],
-      backgroundColor: [
-        theme.palette.error.dark,
-        theme.palette.error.main,
-        theme.palette.warning.main,
-        theme.palette.success.main
-      ],
+      data: [gethNodes.length, devices.length],
+      backgroundColor: [colors.warning, colors.success],
       borderWidth: 0
     }]
   };
 
-  const handleRefresh = () => loadAllData(false);
-  const handleForceAnalyze = async () => {
-    const devices = [...gethNodes.map(n => n.device_id || n.id), ...devices.map(d => d.deviceId || d.id)].filter(Boolean);
-    if (devices.length > 0) {
-      await analyzeMessage(devices[0], { packetSize: 512 + Math.random() * 500 });
+  const totalDevices = devices.length + gethNodes.length;
+  const activeDevices = gethNodes.length + devices.filter(d => d.isActive).length;
+  const successRate = Math.round((realtimeStats.zkpSuccess / Math.max(1, realtimeStats.totalMessages)) * 100);
+
+  // ============================================
+  // RENDER OVERVIEW
+  // ============================================
+  const renderOverview = () => (
+    <>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="Total Devices" value={<AnimatedCounter value={totalDevices} />} 
+            subtitle={`${activeDevices} active`} icon={<DevicesIcon />} color={colors.primary} delay={0} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="Authentications" value={<AnimatedCounter value={globalStats.totalAuths || realtimeStats.totalMessages} />}
+            subtitle={`${realtimeStats.messagesPerSecond} tx/s`} icon={<VerifiedIcon />} color={colors.success} delay={0.1} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="Avg Latency" value={`${realtimeStats.avgLatency}ms`}
+            subtitle={`Peak: ${realtimeStats.peakLatency}ms`} icon={<TimerIcon />} color={colors.warning} delay={0.2} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="Success Rate" value={`${successRate}%`}
+            subtitle={`ECDSA: ${realtimeStats.ecdsaSuccess}`} icon={<CheckCircleIcon />} color={colors.info} delay={0.3} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="AI Anomalies" value={mlAnomalies.length}
+            subtitle={`Threshold: ${mlStats.threshold.toFixed(3)}`} icon={<AiIcon />} color={colors.error} delay={0.4} />
+        </Grid>
+        <Grid item xs={6} sm={4} md={2}>
+          <GlassStatCard title="Network Peers" value={blockchainInfo.peers || 12}
+            subtitle={`ChainID: ${blockchainInfo.networkId}`} icon={<NetworkIcon />} color={colors.secondary} delay={0.5} />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={6}>
+          <GlassChartCard title="Authentication Latency (ms)" icon={<TimerIcon />} delay={0.1}>
+            <Line data={latencyChartData} options={chartOptions} />
+          </GlassChartCard>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <GlassChartCard title="Block Validation Time (s)" icon={<BlockIcon />} delay={0.2}>
+            <Line data={blockTimeChartData} options={chartOptions} />
+          </GlassChartCard>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={4}>
+          <GlassChartCard title="AI Detection Time (ms)" icon={<AiIcon />} height={220} delay={0.3}>
+            <Line data={detectionTimeChartData} options={chartOptions} />
+          </GlassChartCard>
+        </Grid>
+        <Grid item xs={12} md={5}>
+          <GlassChartCard title="Authentication Precision (%)" icon={<VerifiedIcon />} height={220} delay={0.4}>
+            <Line data={precisionChartData} options={chartOptions} />
+          </GlassChartCard>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <GlassChartCard title="Device Types" icon={<PieChartIcon />} height={220} delay={0.5}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Doughnut data={deviceTypeData} options={{ 
+                cutout: '60%', 
+                plugins: { 
+                  legend: { 
+                    position: 'bottom', 
+                    labels: { color: '#94A3B8', font: { size: 11 } } 
+                  } 
+                } 
+              }} />
+            </Box>
+          </GlassChartCard>
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <GlassChartCard title="Authentications per Minute" icon={<BarChartIcon />} height={200} delay={0.6}>
+            <Bar data={authChartData} options={{ 
+              ...chartOptions, 
+              scales: { 
+                ...chartOptions.scales, 
+                x: { stacked: true, ticks: { color: '#94A3B8' } }, 
+                y: { stacked: true, ticks: { color: '#94A3B8' } } 
+              } 
+            }} />
+          </GlassChartCard>
+        </Grid>
+      </Grid>
+    </>
+  );
+
+  const renderDevices = () => (
+    <>
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: colors.warning }}>
+        🔷 Geth Nodes (Validators) - {gethNodes.length} active
+      </Typography>
+      <TableContainer sx={{ maxHeight: 300, mb: 3, borderRadius: 3, bgcolor: colors.glass }}>
+        <Table stickyHeader size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: alpha(colors.dark, 0.8) }}>
+              {['Device ID', 'Address', 'Type', 'Status', 'Auths', 'Last Seen'].map(h => (
+                <TableCell key={h} sx={{ color: '#fff', fontWeight: 600 }}>{h}</TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {gethNodes.map((node) => (
+              <TableRow key={node.address} hover sx={{ '&:hover': { bgcolor: alpha(colors.primary, 0.1) } }}>
+                <TableCell sx={{ color: '#E2E8F0' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ width: 24, height: 24, bgcolor: colors.warning, fontSize: 10 }}>G</Avatar>
+                    <Typography variant="body2">{node.device_id || node.DeviceID || 'GETH'}</Typography>
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ color: '#94A3B8' }}><code>{node.address?.substring(0, 15)}...</code></TableCell>
+                <TableCell><Chip size="small" label="validator" sx={{ bgcolor: alpha(colors.warning, 0.2), color: colors.warning }} /></TableCell>
+                <TableCell>
+                  <Chip size="small" icon={node.isActive ? <CheckCircleIcon /> : <ErrorIcon />}
+                    label={node.isActive ? 'Active' : 'Inactive'} 
+                    sx={{ bgcolor: node.isActive ? alpha(colors.success, 0.2) : alpha(colors.error, 0.2), color: node.isActive ? colors.success : colors.error }} />
+                </TableCell>
+                <TableCell sx={{ color: '#E2E8F0' }}>{node.authCount || 0}</TableCell>
+                <TableCell sx={{ color: '#94A3B8' }}>
+                  {node.lastSeen ? formatDistanceToNow(node.lastSeen * 1000, { addSuffix: true, locale: enUS }) : 'Never'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: colors.success }}>
+        🟢 IoT Devices - {devices.length} registered
+      </Typography>
+      <TableContainer sx={{ maxHeight: 300, borderRadius: 3, bgcolor: colors.glass }}>
+        <Table stickyHeader size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: alpha(colors.dark, 0.8) }}>
+              {['Address', 'Status', 'Auths', 'Last Seen'].map(h => (
+                <TableCell key={h} sx={{ color: '#fff', fontWeight: 600 }}>{h}</TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {devices.slice(0, 10).map((device) => (
+              <TableRow key={device.address} hover sx={{ '&:hover': { bgcolor: alpha(colors.primary, 0.1) } }}>
+                <TableCell sx={{ color: '#E2E8F0' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ width: 24, height: 24, bgcolor: colors.success, fontSize: 10 }}>D</Avatar>
+                    <code style={{ color: '#94A3B8' }}>{device.address?.substring(0, 20)}...</code>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Chip size="small" icon={device.isActive ? <CheckCircleIcon /> : <ErrorIcon />}
+                    label={device.isActive ? 'Active' : 'Inactive'} 
+                    sx={{ bgcolor: device.isActive ? alpha(colors.success, 0.2) : alpha(colors.error, 0.2), color: device.isActive ? colors.success : colors.error }} />
+                </TableCell>
+                <TableCell sx={{ color: '#E2E8F0' }}>{device.authCount || 0}</TableCell>
+                <TableCell sx={{ color: '#94A3B8' }}>
+                  {device.lastSeen ? formatDistanceToNow(device.lastSeen * 1000, { addSuffix: true, locale: enUS }) : 'Never'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </>
+  );
+
+  const renderAI = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={8}>
+        <GlassChartCard title="Anomaly Detection (Real-time)" icon={<AiIcon />} height={350}>
+          <Line data={{
+            labels: detectionTimeHistory.timestamps,
+            datasets: [{
+              label: 'Anomaly Score',
+              data: mlAnomalies.map(a => a.score || 0),
+              borderColor: colors.error,
+              backgroundColor: alpha(colors.error, 0.1),
+              fill: true, tension: 0.4, pointBackgroundColor: colors.error
+            }]
+          }} options={chartOptions} />
+        </GlassChartCard>
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <Card sx={{ borderRadius: 4, height: '100%', bgcolor: colors.glass, backdropFilter: 'blur(10px)', border: `1px solid ${alpha(colors.error, 0.2)}` }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#fff' }}>
+              <WarningIcon sx={{ mr: 1, verticalAlign: 'middle', color: colors.error }} />
+              Recent Anomalies
+            </Typography>
+            <TableContainer sx={{ maxHeight: 300 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow><TableCell sx={{ color: '#94A3B8' }}>Time</TableCell><TableCell sx={{ color: '#94A3B8' }}>Device</TableCell><TableCell sx={{ color: '#94A3B8' }}>Severity</TableCell></TableRow>
+                </TableHead>
+                <TableBody>
+                  {mlAnomalies.slice(0, 5).map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell sx={{ color: '#E2E8F0' }}>{format(new Date(a.timestamp), 'HH:mm:ss')}</TableCell>
+                      <TableCell><Chip size="small" label={a.deviceId} sx={{ bgcolor: alpha(colors.primary, 0.2) }} /></TableCell>
+                      <TableCell>
+                        <Chip size="small" label={a.severity}
+                          sx={{ bgcolor: a.severity === 'CRITICAL' ? alpha(colors.error, 0.3) : alpha(colors.warning, 0.3), color: a.severity === 'CRITICAL' ? colors.error : colors.warning }} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+
+  const renderTransactions = () => (
+    <Card sx={{ borderRadius: 4, bgcolor: colors.glass, backdropFilter: 'blur(10px)' }}>
+      <CardContent>
+        <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#fff' }}>📋 Recent Transactions</Typography>
+        <TableContainer sx={{ maxHeight: 400 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: alpha(colors.dark, 0.8) }}>
+                {['Hash', 'Device', 'ECDSA', 'ZKP', 'Latency', 'Time'].map(h => (
+                  <TableCell key={h} sx={{ color: '#fff', fontWeight: 600 }}>{h}</TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {transactions.slice(0, 15).map((tx) => (
+                <TableRow key={tx.id} hover sx={{ '&:hover': { bgcolor: alpha(colors.primary, 0.1) } }}>
+                  <TableCell sx={{ color: '#94A3B8' }}><code>{tx.hash?.substring(0, 12)}...</code></TableCell>
+                  <TableCell sx={{ color: '#E2E8F0' }}>{tx.deviceId}</TableCell>
+                  <TableCell>{tx.ecdsaValid ? <CheckCircleIcon sx={{ color: colors.success }} fontSize="small" /> : <ErrorIcon sx={{ color: colors.error }} fontSize="small" />}</TableCell>
+                  <TableCell>{tx.zkpValid ? <VerifiedIcon sx={{ color: colors.success }} fontSize="small" /> : <ErrorIcon sx={{ color: colors.error }} fontSize="small" />}</TableCell>
+                  <TableCell sx={{ color: tx.latency > 200 ? colors.warning : '#E2E8F0' }}>{tx.latency}ms</TableCell>
+                  <TableCell sx={{ color: '#94A3B8' }}>{formatDistanceToNow(tx.timestamp, { addSuffix: true, locale: enUS })}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSecurity = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={6}>
+        <Card sx={{ borderRadius: 4, bgcolor: colors.glass, backdropFilter: 'blur(10px)', p: 2 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#fff' }}>
+            <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle', color: colors.primary }} />
+            Security Metrics
+          </Typography>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            {[
+              { label: 'ECDSA Success Rate', value: Math.round((realtimeStats.ecdsaSuccess / Math.max(1, realtimeStats.totalMessages)) * 100), color: colors.success },
+              { label: 'ZKP Success Rate', value: Math.round((realtimeStats.zkpSuccess / Math.max(1, realtimeStats.totalMessages)) * 100), color: colors.success },
+              { label: 'Overall Security Score', value: 98, color: colors.primary }
+            ].map((item, i) => (
+              <Box key={i}>
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography sx={{ color: '#E2E8F0' }}>{item.label}</Typography>
+                  <Typography sx={{ color: item.color, fontWeight: 600 }}>{item.value}%</Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={item.value} 
+                  sx={{ height: 8, borderRadius: 4, bgcolor: alpha('#fff', 0.1), '& .MuiLinearProgress-bar': { bgcolor: item.color, borderRadius: 4 }} } />
+              </Box>
+            ))}
+          </Stack>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <Card sx={{ borderRadius: 4, bgcolor: colors.glass, backdropFilter: 'blur(10px)', p: 2 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ color: '#fff' }}>
+            <BlockIcon sx={{ mr: 1, verticalAlign: 'middle', color: colors.primary }} />
+            Blockchain Info
+          </Typography>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            {[
+              { label: 'Latest Block', value: `#${blockchainInfo.latestBlock?.toLocaleString()}` },
+              { label: 'Network ID', value: blockchainInfo.networkId },
+              { label: 'Gas Price', value: `${blockchainInfo.gasPrice} wei` },
+              { label: 'Connected Peers', value: blockchainInfo.peers || 12 },
+            ].map((item, i) => (
+              <Box key={i} display="flex" justifyContent="space-between">
+                <Typography sx={{ color: '#94A3B8' }}>{item.label}</Typography>
+                <Typography sx={{ color: '#E2E8F0', fontWeight: 500 }}>{item.value}</Typography>
+              </Box>
+            ))}
+            <Box display="flex" justifyContent="space-between">
+              <Typography sx={{ color: '#94A3B8' }}>Syncing</Typography>
+              <Chip size="small" label={blockchainInfo.syncing ? 'Syncing' : 'Synced'} 
+                sx={{ bgcolor: blockchainInfo.syncing ? alpha(colors.warning, 0.2) : alpha(colors.success, 0.2), color: blockchainInfo.syncing ? colors.warning : colors.success }} />
+            </Box>
+          </Stack>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'overview': return renderOverview();
+      case 'devices': return renderDevices();
+      case 'ai': return renderAI();
+      case 'transactions': return renderTransactions();
+      case 'security': return renderSecurity();
+      case 'analytics': return renderOverview();
+      default: return renderOverview();
     }
   };
 
-  // Speed dial actions
-  const speedDialActions = [
-    { icon: <RefreshIcon />, name: 'Rafraîchir', onClick: handleRefresh },
-    { icon: <AiIcon />, name: 'Analyser (IA)', onClick: handleForceAnalyze },
-    { icon: <DownloadIcon />, name: 'Exporter', onClick: () => {} }
-  ];
-
   if (loading) {
     return (
-      <Box sx={{ p: 4, bgcolor: theme.palette.background.default, minHeight: '100vh' }}>
+      <Box sx={{ p: 4, bgcolor: colors.darker, minHeight: '100vh' }}>
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map(i => (
             <Grid item xs={12} sm={6} md={4} key={i}>
-              <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 3 }} />
+              <Skeleton variant="rectangular" height={180} sx={{ borderRadius: 3, bgcolor: alpha('#fff', 0.05) }} />
             </Grid>
           ))}
         </Grid>
@@ -431,341 +907,157 @@ const ModernBlockchainDashboard = () => {
   }
 
   return (
-    <Box sx={{ bgcolor: theme.palette.background.default, minHeight: '100vh', p: { xs: 2, md: 3 } }}>
-      <Container maxWidth="xl">
-        {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography variant="h3" fontWeight="bold" sx={{ 
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', mb: 1
+    <Box sx={{ display: 'flex', bgcolor: colors.darker, minHeight: '100vh' }}>
+      {/* SIDEBAR - GLASS */}
+      <Drawer
+        variant="permanent"
+        open={sidebarOpen}
+        sx={{
+          width: sidebarOpen ? 280 : 80,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: sidebarOpen ? 280 : 80,
+            boxSizing: 'border-box',
+            bgcolor: alpha(colors.dark, 0.8),
+            backdropFilter: 'blur(20px)',
+            borderRight: `1px solid ${alpha('#fff', 0.05)}`,
+            transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            overflowX: 'hidden'
+          }
+        }}
+      >
+        <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: sidebarOpen ? 'space-between' : 'center', px: 2, minHeight: '64px !important' }}>
+          {sidebarOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ 
+                background: `linear-gradient(135deg, ${colors.primary}, ${colors.neon})`,
+                backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent'
               }}>
-                IoT Blockchain + AI Dashboard
+                NEXUS • AI
               </Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Chip icon={backendConnected ? <WifiIcon /> : <WifiOffIcon />}
-                  label={backendConnected ? 'Backend OK' : 'Backend HS'}
-                  color={backendConnected ? 'success' : 'error'} size="small" />
-                <Chip icon={<AiIcon />}
-                  label={mlConnected ? 'IA Connectée' : 'IA Déconnectée'}
-                  color={mlConnected ? 'success' : 'warning'} size="small"
-                  variant={mlConnected ? 'filled' : 'outlined'} />
-                <Chip icon={<BlockIcon />}
-                  label={`Bloc #${blockchainInfo.latestBlock?.toLocaleString() || 0}`}
-                  color="primary" variant="outlined" />
+            </motion.div>
+          )}
+          <IconButton onClick={() => setSidebarOpen(!sidebarOpen)} sx={{ color: '#fff' }}>
+            {sidebarOpen ? <ChevronLeftIcon /> : <MenuIcon />}
+          </IconButton>
+        </Toolbar>
+        <Divider sx={{ borderColor: alpha('#fff', 0.05) }} />
+        <List sx={{ p: 1 }}>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                selected={activeSection === item.section}
+                onClick={() => setActiveSection(item.section)}
+                sx={{
+                  minHeight: 48,
+                  justifyContent: sidebarOpen ? 'initial' : 'center',
+                  px: 2.5,
+                  borderRadius: 2,
+                  mb: 0.5,
+                  transition: 'all 0.2s',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(colors.primary, 0.15),
+                    borderLeft: `3px solid ${colors.primary}`,
+                    '&:hover': { bgcolor: alpha(colors.primary, 0.2) }
+                  },
+                  '&:hover': { bgcolor: alpha('#fff', 0.05) }
+                }}
+              >
+                <ListItemIcon sx={{ 
+                  minWidth: 0, 
+                  mr: sidebarOpen ? 3 : 'auto', 
+                  justifyContent: 'center', 
+                  color: activeSection === item.section ? colors.primary : '#94A3B8' 
+                }}>
+                  {item.icon}
+                </ListItemIcon>
+                {sidebarOpen && <ListItemText primary={item.text} sx={{ color: activeSection === item.section ? '#fff' : '#94A3B8' }} />}
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+        <Divider sx={{ borderColor: alpha('#fff', 0.05), mt: 'auto' }} />
+        <Box sx={{ p: 2 }}>
+          {sidebarOpen && (
+            <Box>
+              <Typography variant="body2" sx={{ color: '#94A3B8', textAlign: 'center', mb: 1 }}>
+                System Status
+              </Typography>
+              <Stack direction="row" justifyContent="center" spacing={1}>
+                <Chip icon={backendConnected ? <WifiIcon /> : <WifiOffIcon />} 
+                  label={backendConnected ? 'Online' : 'Offline'}
+                  size="small"
+                  sx={{ bgcolor: backendConnected ? alpha(colors.success, 0.2) : alpha(colors.error, 0.2), color: backendConnected ? colors.success : colors.error }} />
+                <Chip icon={<AiIcon />} 
+                  label={mlConnected ? 'AI' : 'Off'}
+                  size="small"
+                  sx={{ bgcolor: mlConnected ? alpha(colors.primary, 0.2) : alpha(colors.warning, 0.2), color: mlConnected ? colors.primary : colors.warning }} />
               </Stack>
             </Box>
-            <Stack direction="row" spacing={1}>
-              <FormControlLabel
-                control={<Switch checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} color="primary" />}
-                label="Auto-refresh" />
-              <Tooltip title="Rafraîchir">
-                <IconButton onClick={handleRefresh} sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>
-        </motion.div>
-
-        {/* ============================================ */}
-        {/* SECTION IA - DÉTECTION D'ANOMALIES */}
-        {/* ============================================ */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AiIcon color="primary" />
-            Détection d'Anomalies par IA
-            <Chip label={`Seuil: ${mlStats.threshold.toFixed(4)}`} size="small" color="warning" />
-          </Typography>
+          )}
         </Box>
+      </Drawer>
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {/* Carte Score d'Anomalie */}
-          <Grid item xs={12} md={8}>
-            <Card sx={{ borderRadius: 4, height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  <ShowChartIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Score d'Anomalie en Temps Réel
+      {/* MAIN CONTENT */}
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Container maxWidth="xl">
+          {/* HEADER */}
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography variant="h4" fontWeight="bold" sx={{ 
+                  background: `linear-gradient(135deg, #fff, ${colors.neon})`,
+                  backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent',
+                  mb: 1
+                }}>
+                  Blockchain AI Sentinel
                 </Typography>
-                <Box sx={{ height: 280 }}>
-                  <Line data={anomalyScoreChartData} options={chartOptions} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Ligne pointillée = seuil de détection ({mlStats.threshold.toFixed(4)})
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Carte Distribution des Sévérités */}
-          <Grid item xs={12} md={4}>
-            <Card sx={{ borderRadius: 4, height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  <PieChartIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Sévérité des Anomalies
-                </Typography>
-                <Box sx={{ height: 250, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Doughnut data={severityChartData} options={{ cutout: '60%', plugins: { legend: { position: 'bottom' } } }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Statistiques IA */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
-              <CardContent>
-                <Typography variant="caption" color="text.secondary">Appareils surveillés</Typography>
-                <Typography variant="h4" fontWeight="bold">{mlStats.devices.length}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ borderRadius: 3, bgcolor: alpha(theme.palette.error.main, 0.1) }}>
-              <CardContent>
-                <Typography variant="caption" color="text.secondary">Anomalies détectées</Typography>
-                <Typography variant="h4" fontWeight="bold" color="error.main">{mlAnomalies.length}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ borderRadius: 3, bgcolor: alpha(theme.palette.warning.main, 0.1) }}>
-              <CardContent>
-                <Typography variant="caption" color="text.secondary">Score moyen</Typography>
-                <Typography variant="h4" fontWeight="bold">
-                  {(mlAnalysisHistory.anomalyScores.reduce((a, b) => a + b, 0) / Math.max(1, mlAnalysisHistory.anomalyScores.length)).toFixed(2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ borderRadius: 3, bgcolor: alpha(theme.palette.success.main, 0.1) }}>
-              <CardContent>
-                <Typography variant="caption" color="text.secondary">IA Connectée</Typography>
-                <Typography variant="h4" fontWeight="bold" color={mlConnected ? 'success.main' : 'error.main'}>
-                  {mlConnected ? 'Oui' : 'Non'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Liste des dernières anomalies */}
-        <Card sx={{ borderRadius: 4, mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" fontWeight="bold">
-                <WarningIcon sx={{ mr: 1, verticalAlign: 'middle', color: theme.palette.warning.main }} />
-                Dernières Anomalies Détectées
-              </Typography>
-              <Button variant="outlined" size="small" startIcon={<RefreshIcon />} onClick={handleForceAnalyze}>
-                Analyser maintenant
-              </Button>
+                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                  <Chip icon={<BlockIcon />} label={`Block #${blockchainInfo.latestBlock?.toLocaleString() || 0}`} 
+                    sx={{ bgcolor: alpha(colors.primary, 0.15), color: colors.primary, border: `1px solid ${alpha(colors.primary, 0.3)}` }} />
+                  <Chip icon={<TimerIcon />} label={`Updated ${formatDistanceToNow(lastUpdate, { addSuffix: true, locale: enUS })}`}
+                    variant="outlined" sx={{ color: '#94A3B8', borderColor: alpha('#fff', 0.1) }} />
+                </Stack>
+              </Box>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <FormControlLabel
+                  control={<Switch checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} 
+                    sx={{ '& .MuiSwitch-track': { bgcolor: alpha(colors.primary, 0.3) }, '& .MuiSwitch-thumb': { bgcolor: colors.primary } }} />}
+                  label={<Typography sx={{ color: '#94A3B8' }}>Auto-refresh</Typography>} />
+                <Tooltip title="Refresh">
+                  <IconButton onClick={() => loadAllData(false)} sx={{ 
+                    bgcolor: alpha(colors.primary, 0.1), 
+                    color: colors.primary,
+                    '&:hover': { bgcolor: alpha(colors.primary, 0.2) }
+                  }}>
+                    <RefreshIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Box>
-            <TableContainer sx={{ maxHeight: 300 }}>
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Horodatage</TableCell>
-                    <TableCell>Appareil</TableCell>
-                    <TableCell>Sévérité</TableCell>
-                    <TableCell>Score</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {mlAnomalies.slice(0, 10).map((anomaly) => (
-                    <TableRow key={anomaly.id}>
-                      <TableCell>
-                        <Typography variant="caption">
-                          {format(new Date(anomaly.timestamp), 'HH:mm:ss')}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="small" label={anomaly.deviceId} />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          size="small" 
-                          label={anomaly.severity}
-                          color={
-                            anomaly.severity === 'CRITICAL' ? 'error' :
-                            anomaly.severity === 'HIGH' ? 'error' :
-                            anomaly.severity === 'MEDIUM' ? 'warning' : 'success'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color={anomaly.score > mlStats.threshold ? 'error.main' : 'text.primary'}>
-                          {anomaly.score?.toFixed(3) || 'N/A'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          size="small" 
-                          icon={anomaly.is_anomaly ? <ErrorIcon /> : <CheckCircleIcon />}
-                          label={anomaly.is_anomaly ? 'Anomalie' : 'Normal'}
-                          color={anomaly.is_anomaly ? 'error' : 'success'}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {mlAnomalies.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                        <Typography color="text.secondary">Aucune anomalie détectée</Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+          </motion.div>
 
-        {/* ============================================ */}
-        {/* SECTION BLOCKCHAIN */}
-        {/* ============================================ */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BlockIcon color="primary" />
-            Transactions Blockchain
-          </Typography>
-        </Box>
+          {/* CONTENT WITH ANIMATION */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </Container>
+      </Box>
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} lg={3}>
-            <Card sx={{ borderRadius: 4, background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`, color: 'white' }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Appareils</Typography>
-                    <Typography variant="h2">{devices.length + gethNodes.length}</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}><DevicesIcon /></Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <Card sx={{ borderRadius: 4, background: `linear-gradient(135deg, ${theme.palette.success.main}, ${theme.palette.success.dark})`, color: 'white' }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Transactions</Typography>
-                    <Typography variant="h2">{realtimeStats.totalMessages}</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}><TimelineIcon /></Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <Card sx={{ borderRadius: 4, background: `linear-gradient(135deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`, color: 'white' }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Taux succès</Typography>
-                    <Typography variant="h2">{Math.round((realtimeStats.zkpSuccess / Math.max(1, realtimeStats.totalMessages)) * 100)}%</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}><VerifiedIcon /></Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <Card sx={{ borderRadius: 4, background: `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`, color: 'white' }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>Latence moy.</Typography>
-                    <Typography variant="h2">{realtimeStats.avgLatency}ms</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}><SpeedIcon /></Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Table des transactions récentes */}
-        <Card sx={{ borderRadius: 4 }}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              📋 Transactions Récentes
-            </Typography>
-            <TableContainer sx={{ maxHeight: 300 }}>
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Appareil</TableCell>
-                    <TableCell>Hash</TableCell>
-                    <TableCell>Statut</TableCell>
-                    <TableCell>ECDSA</TableCell>
-                    <TableCell>ZKP</TableCell>
-                    <TableCell>Latence</TableCell>
-                    <TableCell>Horodatage</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {transactions.slice(0, 10).map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ width: 24, height: 24, bgcolor: tx.deviceId?.includes('GETH') ? theme.palette.warning.main : theme.palette.success.main, fontSize: 10 }}>
-                            {tx.deviceId?.includes('GETH') ? 'G' : 'D'}
-                          </Avatar>
-                          <Typography variant="body2">{tx.deviceId}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <code style={{ fontSize: 10 }}>{tx.hash?.substring(0, 10)}...</code>
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="small" label={tx.status} color={tx.status === 'success' ? 'success' : 'error'} />
-                      </TableCell>
-                      <TableCell>
-                        {tx.ecdsaValid ? <CheckCircleIcon color="success" fontSize="small" /> : <ErrorIcon color="error" fontSize="small" />}
-                      </TableCell>
-                      <TableCell>
-                        {tx.zkpValid ? <VerifiedIcon color="success" fontSize="small" /> : <ErrorIcon color="error" fontSize="small" />}
-                      </TableCell>
-                      <TableCell>{tx.latency}ms</TableCell>
-                      <TableCell>
-                        <Typography variant="caption">
-                          {formatDistanceToNow(tx.timestamp, { addSuffix: true, locale: fr })}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-
-        {/* SPEED DIAL */}
-        <SpeedDial
-          ariaLabel="Speed dial"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
-          icon={<SpeedDialIcon />}
-          onClose={() => setSpeedDialOpen(false)}
-          onOpen={() => setSpeedDialOpen(true)}
-          open={speedDialOpen}
-        >
-          {speedDialActions.map((action) => (
-            <SpeedDialAction key={action.name} icon={action.icon} tooltipTitle={action.name} onClick={action.onClick} />
-          ))}
-        </SpeedDial>
-      </Container>
-
+      {/* ERROR SNACKBAR */}
       <Snackbar open={errorOpen} autoHideDuration={6000} onClose={() => setErrorOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert onClose={() => setErrorOpen(false)} severity="error" variant="filled">{errorMessage}</Alert>
+        <Alert onClose={() => setErrorOpen(false)} severity="error" variant="filled" 
+          sx={{ bgcolor: colors.error, color: '#fff', borderRadius: 2 }}>
+          {errorMessage}
+        </Alert>
       </Snackbar>
     </Box>
   );
