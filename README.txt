@@ -61,8 +61,6 @@ for port in 8541 8542 8543 8544; do
 done
 
 
-
-
 # Résultat attendu : Port 8541: 3 peers / Port 8542: 3 peers / Port 8543: 3 peers / Port 8544: 3 peers
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -106,9 +104,56 @@ npm start
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+## 🛑 Arrêter le Système
+
+cd iot-project
+./stop-all.sh
+
+# Résultat attendu : ✅ Système arrêté avec succès !
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 🔄 Redémarrer le Système (après un arrêt)
+
+cd iot-project
+./start-all.sh
+
+# Cette commande relance automatiquement :
+# - La blockchain (Docker)
+# - Le service IA
+# - Le backend Go
+# - Le simulateur
+# - Le dashboard
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 🔄 Synchroniser avec GitHub
+
+# 1. Récupérer les derniers changements
+git pull origin main --rebase
+
+# 2. Ajouter vos modifications
+git add .
+git commit -m "Votre message"
+
+# 3. Pousser vers GitHub
+git push
+
+# OU utiliser le script automatique
+./sync.sh
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 ## 🌐 Points d'Accès
 
 Dashboard       http://localhost:3000
 Backend API     http://localhost:8080/api/health
 Service IA      http://localhost:5001/health
 Blockchain RPC  http://localhost:8541
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 📊 Vérifier l'état du système
+
+cd iot-project
+./check-status.sh
