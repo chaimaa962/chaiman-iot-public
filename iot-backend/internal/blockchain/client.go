@@ -46,28 +46,28 @@ var GethNodes = []struct {
     Message  string
 }{
     {
-        Address:  "0xaf0c6BF76f11760b7BA90A852aAeAdFe50aB9277",
+        Address:  "0xc6A0A22e356cE0B09246dD7A1b0C3B223d39e0fF",
         DeviceID: "GETH_NODE_1",
         NodeID:   1,
         Interval: 5,
         Message:  "Bonjour je suis le nœud Geth 1 (autorité PoA)",
     },
     {
-        Address:  "0xc4F26670F7539138A21E7F33F2b042DBD1dA6f30",
+        Address:  "0x7d2b6759153a1625A757F36b63f7034dd8C095Ed",
         DeviceID: "GETH_NODE_2",
         NodeID:   2,
         Interval: 10,
         Message:  "Bonjour je suis le nœud Geth 2 (autorité PoA)",
     },
     {
-        Address:  "0x60E69259368A740e8fE91CC61c5306234E36e01d",
+        Address:  "0x56f1Df7fD9DA1B90616c9fC7E4FaF303a1cf6830",
         DeviceID: "GETH_NODE_3",
         NodeID:   3,
         Interval: 15,
         Message:  "Bonjour je suis le nœud Geth 3 (autorité PoA)",
     },
     {
-        Address:  "0x29885Af643612E8B72123CcC3D6f527cD9321319",
+        Address:  "0xb1a91F75437f01983a843719eC421532f5E044ED",
         DeviceID: "GETH_NODE_4",
         NodeID:   4,
         Interval: 25,
