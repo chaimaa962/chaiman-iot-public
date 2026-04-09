@@ -12,13 +12,15 @@
 
 ### 📥 Étape 0 - Cloner le projet
 
-```bash
 git clone https://github.com/chaimaa962/iot-project.git
 cd iot-project
 chmod +x *.sh
 
+---
 
-cd iot-docker-project 
+## 🖥️ TERMINAL 1 - Blockchain
+
+cd iot-docker-project
 
 # 1. Démarrer les conteneurs blockchain
 docker-compose up -d validator1 validator2 validator3 validator4
@@ -27,7 +29,8 @@ docker-compose up -d validator1 validator2 validator3 validator4
 sleep 30
 
 # 3. Connecter les validateurs entre eux
-./demarer.sh# Nettoyer les enodes (sans ?discport=0)
+./demarer.sh
+# Nettoyer les enodes (sans ?discport=0)
 enode1="enode://9f07a02efe326bc16b46e356acf2960fec0a7e835b2f7fb061bad442b0d05084682fa0b3005e71c4d4baaecd65e6a33b726a88c5787dafbcea30bc29adc59481@172.20.0.11:30301"
 enode2="enode://740eee8689016b4b3b515b223c7c5ea58da5a0f0c7bc72b5dca3fae2bc8e4ed3677e5fbb624c0438862a325ae1a385f9a843804991ab1878711640a9c6ba066d@172.20.0.12:30302"
 enode3="enode://ab091bee69aea0ac1da14ed979e60c0ff396a6f28842ff40a83417f625c339e37876ecc1e4a5dee70d265e14c0ca9507100b680acfcb175acefb38b8fda003e6@172.20.0.13:30303"
@@ -56,11 +59,28 @@ for port in 8541 8542 8543 8544; do
     count=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_peers","params":[],"id":1}' | jq '.result | length')
     echo "Port $port: $count peers"
 done
-cd iot-project/iot-backend
+
+
+
+
+# Résultat attendu : Port 8541: 3 peers / Port 8542: 3 peers / Port 8543: 3 peers / Port 8544: 3 peers
+
+---
+
+## 🖥️ TERMINAL 2 - Backend Go + ZKP
+
+cd iot-docker-project/iot-backend
 
 # Lancer le backend sur le port 8080
 PORT=8080 go run ./cmd/api/main_secure.go
-cd iot-project
+
+# Résultat attendu : ✅ GETH_NODE_1 déjà enregistré ... 🚀 Serveur SÉCURISÉ démarré (ECDSA + ZKP) [port 8080]
+
+---
+
+## 🖥️ TERMINAL 3 - Simulateur IoT
+
+cd iot-docker-project
 
 # Charger les clés privées
 export $(cat .env | xargs 2>/dev/null)
@@ -68,28 +88,27 @@ export $(cat .env | xargs 2>/dev/null)
 # Démarrer le simulateur (4 nœuds)
 python3 geth_nodes_simulator.py
 
+# Résultat attendu : 🔐 [GETH_NODE_1] AUTHENTIFIÉ ✅ [GETH_NODE_1] #1 | 🔷 RÉELLE | Bloc #4583
 
-cd iot-project/iot-dashboard
+---
+
+## 🖥️ TERMINAL 4 - Dashboard
+
+cd iot-docker-proejct/iot-dashboard
 
 # Installer les dépendances (première fois uniquement)
 npm install
 
 # Démarrer le dashboard
-npm start🌐 Points d'Accès
-Service	URL
-Dashboard	http://localhost:3000
-Backend API	http://localhost:8080/api/health
-Service IA	http://localhost:5001/health
-Blockchain RPC	http://localhost:8541
+npm start
 
+# Le dashboard s'ouvre sur http://localhost:3000
 
+---
 
+## 🌐 Points d'Accès
 
-
-
-
-
-
-
-
-
+Dashboard       http://localhost:3000
+Backend API     http://localhost:8080/api/health
+Service IA      http://localhost:5001/health
+Blockchain RPC  http://localhost:8541
