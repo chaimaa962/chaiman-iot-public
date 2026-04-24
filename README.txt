@@ -30,28 +30,39 @@ sleep 30
 
 # 3. Connecter les validateurs entre eux
 ./demarer.sh
-# Nettoyer les enodes (sans ?discport=0)
-enode1="enode://9f07a02efe326bc16b46e356acf2960fec0a7e835b2f7fb061bad442b0d05084682fa0b3005e71c4d4baaecd65e6a33b726a88c5787dafbcea30bc29adc59481@172.20.0.11:30301"
-enode2="enode://740eee8689016b4b3b515b223c7c5ea58da5a0f0c7bc72b5dca3fae2bc8e4ed3677e5fbb624c0438862a325ae1a385f9a843804991ab1878711640a9c6ba066d@172.20.0.12:30302"
-enode3="enode://ab091bee69aea0ac1da14ed979e60c0ff396a6f28842ff40a83417f625c339e37876ecc1e4a5dee70d265e14c0ca9507100b680acfcb175acefb38b8fda003e6@172.20.0.13:30303"
-enode4="enode://9e67d0919200a26220cd7d18f3d2f2fe6628cb4059ee7671a129f091e3681a6841df80c252ac64aaeffc6569ce13572e9c66e25711489e2070ed6f7d56727945@172.20.0.14:30304"
+# Récupère les enodes
+enode1=$(curl -s -X POST http://localhost:8541 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' | jq -r '.result.enode' | sed 's/127.0.0.1/172.20.0.11/' | sed 's/\[::\]/172.20.0.11/')
+enode2=$(curl -s -X POST http://localhost:8542 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' | jq -r '.result.enode' | sed 's/127.0.0.1/172.20.0.12/' | sed 's/\[::\]/172.20.0.12/')
+enode3=$(curl -s -X POST http://localhost:8543 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' | jq -r '.result.enode' | sed 's/127.0.0.1/172.20.0.13/' | sed 's/\[::\]/172.20.0.13/')
+enode4=$(curl -s -X POST http://localhost:8544 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' | jq -r '.result.enode' | sed 's/127.0.0.1/172.20.0.14/' | sed 's/\[::\]/172.20.0.14/')
 
-# Connecter
-curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
-curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
-curl -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+echo "ENODE1 trouvé: $(echo $enode1 | head -c 40)..."
+echo "ENODE2 trouvé: $(echo $enode2 | head -c 40)..."
+echo "ENODE3 trouvé: $(echo $enode3 | head -c 40)..."
+echo "ENODE4 trouvé: $(echo $enode4 | head -c 40)..."
 
-curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
-curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
-curl -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+# Val1 -> Val2, Val3, Val4
+curl -s -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}" && echo " Val1->Val2 OK"
+curl -s -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}" && echo " Val1->Val3 OK"
+curl -s -X POST http://localhost:8541 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}" && echo " Val1->Val4 OK"
 
-curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
-curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
-curl -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}"
+# Val2 -> Val1, Val3, Val4
+curl -s -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}" && echo " Val2->Val1 OK"
+curl -s -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}" && echo " Val2->Val3 OK"
+curl -s -X POST http://localhost:8542 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}" && echo " Val2->Val4 OK"
 
-curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}"
-curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}"
-curl -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}"
+# Val3 -> Val1, Val2, Val4
+curl -s -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}" && echo " Val3->Val1 OK"
+curl -s -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}" && echo " Val3->Val2 OK"
+curl -s -X POST http://localhost:8543 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode4\"],\"id\":1}" && echo " Val3->Val4 OK"
+
+# Val4 -> Val1, Val2, Val3
+curl -s -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode1\"],\"id\":1}" && echo " Val4->Val1 OK"
+curl -s -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode2\"],\"id\":1}" && echo " Val4->Val2 OK"
+curl -s -X POST http://localhost:8544 -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"$enode3\"],\"id\":1}" && echo " Val4->Val3 OK"
+
+echo ""
+echo "✅ Tous connectés !"
 
 # Vérifier
 sleep 3
