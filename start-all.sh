@@ -4,108 +4,105 @@ echo "════════════════════════�
 echo "🚀 DÉMARRAGE AUTOMATIQUE DU SYSTÈME IoT + BLOCKCHAIN + IA + ZKP"
 echo "════════════════════════════════════════════════════════════════"
 
-# Couleurs
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+cd ~/iot-docker-project
+mkdir -p logs
 
 # ============================================
-# 1. DÉMARRER LA BLOCKCHAIN POA
+# 1. NETTOYAGE
 # ============================================
-echo -e "\n${YELLOW}📦 1/5 - Démarrage de la Blockchain PoA...${NC}"
-docker-compose up -d validator1 validator2 validator3 validator4 fullnode1 fullnode2 fullnode3 fullnode4
+echo "🧹 Nettoyage des conteneurs..."
+docker stop $(docker ps -aq --filter "name=geth") 2>/dev/null
+docker rm $(docker ps -aq --filter "name=geth") 2>/dev/null
+docker stop iot-ml-analyzer 2>/dev/null && docker rm iot-ml-analyzer 2>/dev/null
 
-echo -e "${BLUE}⏳ Attente synchronisation des nœuds (30s)...${NC}"
+# ============================================
+# 2. BLOCKCHAIN
+# ============================================
+echo "📦 1/5 - Démarrage Blockchain PoA..."
+docker-compose up -d 2>/dev/null || docker compose up -d 2>/dev/null
+echo "⏳ Attente 30s..."
 sleep 30
 
-# Connecter les peers
-echo -e "${YELLOW}🔗 Connexion des validateurs...${NC}"
-./demarer.sh 2>/dev/null | grep -E "peers|Bloc" || true
-
 # ============================================
-# 2. DÉMARRER LE SERVICE IA
+# 3. IA (Ancienne version Docker - commentée mais conservée)
 # ============================================
-echo -e "\n${YELLOW}🤖 2/5 - Démarrage du Service IA (LSTM)...${NC}"
-docker-compose up -d ml-analyzer
-
-echo -e "${BLUE}⏳ Attente chargement du modèle (20s)...${NC}"
-sleep 20
-
-# Vérifier IA
-if curl -s http://localhost:5001/health > /dev/null; then
-    echo -e "${GREEN}✅ Service IA opérationnel${NC}"
-else
-    echo -e "${RED}⚠️  Service IA non disponible${NC}"
-fi
-
-# ============================================
-# 3. DÉMARRER LE BACKEND GO (ECDSA + ZKP)
-# ============================================
-echo -e "\n${YELLOW}🔐 3/5 - Démarrage du Backend Go (ZKP)...${NC}"
-
-# Trouver un terminal disponible et lancer en arrière-plan
-pkill -f "main_secure" 2>/dev/null || true
-
-cd iot-backend
-nohup go run ./cmd/api/main_secure.go > ../logs/backend.log 2>&1 &
-BACKEND_PID=$!
-cd ..
-
-echo -e "${BLUE}⏳ Attente démarrage backend (15s)...${NC}"
+echo "🤖 2/5 - Démarrage Service IA (version Docker)..."
+docker stop iot-ml-analyzer 2>/dev/null && docker rm iot-ml-analyzer 2>/dev/null
+docker-compose up -d ml-analyzer 2>/dev/null || docker compose up -d ml-analyzer 2>/dev/null
+echo "⏳ Attente 15s..."
 sleep 15
+curl -s http://localhost:5001/health >/dev/null 2>&1 && echo "   ✅ IA Docker prête" || echo "   ⚠️ IA Docker en cours..."
 
-if curl -s http://localhost:8080/api/health > /dev/null; then
-    echo -e "${GREEN}✅ Backend Go opérationnel${NC}"
+# ============================================
+# 3b. NOUVEAU: IA V4 AVEC APPRENTISSAGE CONTINU (Python direct)
+# ============================================
+echo "🤖 2b/5 - Démarrage IA V4 avec apprentissage continu..."
+pkill -f "detection.py" 2>/dev/null
+sleep 2
+cd ~/iot-docker-project/iot-backend/ai
+
+# Activer l'environnement virtuel et lancer l'IA
+source venv/bin/activate
+nohup python3 detection.py > ~/iot-docker-project/logs/ia_v4.log 2>&1 &
+IA_PID=$!
+echo "   ✅ IA V4 démarrée (PID: $IA_PID)"
+
+# Attendre le chargement du modèle
+echo "   ⏳ Chargement du modèle V4..."
+sleep 30
+
+# Vérifier que l'IA répond
+if curl -s http://localhost:5001/v4/health > /dev/null 2>&1; then
+    echo "   ✅ IA V4 prête (apprentissage continu activé)"
 else
-    echo -e "${RED}⚠️  Backend Go non disponible${NC}"
+    echo "   ⚠️ IA V4 en cours de chargement..."
 fi
 
-# ============================================
-# 4. LANCER LE SIMULATEUR
-# ============================================
-echo -e "\n${YELLOW}📡 4/5 - Lancement du Simulateur 4 nœuds...${NC}"
-
-# Charger les variables d'environnement
-export $(cat .env | xargs 2>/dev/null)
-
-# Lancer le simulateur en arrière-plan
-pkill -f "geth_nodes_simulator" 2>/dev/null || true
-nohup python3 geth_nodes_simulator.py > logs/simulator.log 2>&1 &
-SIMULATOR_PID=$!
-
-echo -e "${GREEN}✅ Simulateur lancé (PID: $SIMULATOR_PID)${NC}"
+cd ~/iot-docker-project
 
 # ============================================
-# 5. LANCER LE DASHBOARD (optionnel)
+# 4. BACKEND (SCAN + CONNECT AUTO)
 # ============================================
-echo -e "\n${YELLOW}📊 5/5 - Dashboard disponible...${NC}"
-echo -e "${BLUE}Pour lancer le dashboard :${NC}"
-echo -e "   cd iot-dashboard && npm start"
-echo -e "   Puis ouvrir ${GREEN}http://localhost:3000${NC}"
+echo "⚙️  3/5 - Démarrage Backend Go (scan + connexion auto)..."
+pkill -f "iot-backend" 2>/dev/null
+sleep 2
+cd ~/iot-docker-project/iot-backend
+go build -o iot-backend ./cmd/api/main_secure.go 2>/dev/null
+if [ -f "./iot-backend" ]; then
+    nohup ./iot-backend > ../logs/backend.log 2>&1 &
+    echo "   ✅ Backend démarré (PID: $!)"
+else
+    echo "   ❌ Erreur compilation"
+fi
+cd ~/iot-docker-project
+
+# ============================================
+# 5. SIMULATEUR IoT
+# ============================================
+echo "📡 4/5 - Démarrage Simulateur IoT..."
+cd ~/iot-docker-project/iot-backend
+if [ -f "./iot-simulator" ]; then
+    nohup ./iot-simulator > ../logs/iot-simulator.log 2>&1 &
+    echo "   ✅ Simulateur IoT démarré"
+else
+    go build -o iot-simulator ./simulators/iot_simulator.go 2>/dev/null
+    if [ -f "./iot-simulator" ]; then
+        nohup ./iot-simulator > ../logs/iot-simulator.log 2>&1 &
+        echo "   ✅ Simulateur IoT démarré"
+    fi
+fi
+cd ~/iot-docker-project
 
 # ============================================
 # RÉSUMÉ
 # ============================================
-echo -e "\n${GREEN}════════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✅ SYSTÈME DÉMARRÉ AVEC SUCCÈS !${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "📋 ${BLUE}Services disponibles :${NC}"
-echo -e "   🔗 Blockchain RPC:     ${GREEN}http://localhost:8541${NC}"
-echo -e "   🤖 Service IA:         ${GREEN}http://localhost:5001${NC}"
-echo -e "   🔐 Backend ZKP:        ${GREEN}http://localhost:8080${NC}"
-echo -e "   📊 Dashboard:          ${GREEN}http://localhost:3000${NC} (npm start dans iot-dashboard)"
-echo ""
-echo -e "📋 ${BLUE}Logs :${NC}"
-echo -e "   Backend:  ${YELLOW}tail -f logs/backend.log${NC}"
-echo -e "   Simulateur: ${YELLOW}tail -f logs/simulator.log${NC}"
-echo -e "   Blockchain: ${YELLOW}docker-compose logs -f validator1${NC}"
-echo ""
-echo -e "📋 ${BLUE}Arrêter tout :${NC}"
-echo -e "   ${YELLOW}./stop-all.sh${NC}"
-
-# Sauvegarder les PIDs pour l'arrêt
-echo $BACKEND_PID > logs/backend.pid
-echo $SIMULATOR_PID > logs/simulator.pid
+echo "════════════════════════════════════════════════════════════════"
+echo "✅ SYSTÈME DÉMARRÉ !"
+echo "════════════════════════════════════════════════════════════════"
+echo "📊 Services: Blockchain:8541 | Backend:8080 | IA:5001 | IA V4:5001 | Frontend:3000"
+echo "📋 Nœuds Geth: $(docker ps --filter 'name=geth' -q | wc -l) actifs"
+echo "🤖 IA V4: Apprentissage continu activé (ré-entraînement toutes les heures)"
+echo "🔧 Logs: tail -f logs/backend.log"
+echo "🔧 Logs IA V4: tail -f logs/ia_v4.log"
+echo "🛑 Arrêt: ./stop-all.sh"

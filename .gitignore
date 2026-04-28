@@ -1,21 +1,19 @@
-# Environnements virtuels
-venv/
-env/
-.env
-__pycache__/
-*.pyc
-
-# Données des nœuds
-node1_data/
-node2_data/
-project/
-
-# Fichiers temporaires
+nodes/
+logs/
+*.pid
 *.log
-*.tmp
-.DS_Store
-
-# IDE
-.vscode/
-.idea/
-nodes/*/geth/blobpool/
+*.sst
+*.ldb
+*.bag
+*.txn
+*.log
+**.pyc
+__pycache__/
+.env
+node_modules/
+nodes/
+logs/
+*.pid
+nodes/
+logs/
+*.pid

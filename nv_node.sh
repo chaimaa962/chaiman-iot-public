@@ -2,25 +2,51 @@
 
 # ============================================
 # Script pour Ajouter de Nouveaux Nœuds au Réseau POA
+# Version COMPLÈTE - Création + Connexion automatique
 # ============================================
 
 set -e
 
 BASE_DIR="$HOME/iot-docker-project"
+BACKEND_URL="http://localhost:8080"
 NETWORK_ID=2026
 PASSWORD="password123"
 
-# Demander combien de nœuds ajouter
 echo "=========================================="
 echo "➕ Ajouter de nouveaux nœuds au réseau POA"
 echo "=========================================="
 echo ""
-echo "Nœuds actuels :"
-echo "  - 4 validateurs (validator1-4)"
-echo "  - 4 full nodes (fullnode1-4)"
+
+# Détecter le dernier numéro de validateur
+echo "🔍 Détection des nœuds existants..."
+
+LAST_VAL=0
+for node in $(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "geth-validator" | sort -V); do
+    num=$(echo $node | sed 's/geth-validator//')
+    if [ "$num" -gt "$LAST_VAL" ]; then
+        LAST_VAL=$num
+    fi
+done
+# Si aucun trouvé, commencer à 4
+[ "$LAST_VAL" -eq 0 ] && LAST_VAL=4
+
+LAST_FN=0
+for node in $(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "geth-fullnode" | sort -V); do
+    num=$(echo $node | sed 's/geth-fullnode//')
+    if [ "$num" -gt "$LAST_FN" ]; then
+        LAST_FN=$num
+    fi
+done
+[ "$LAST_FN" -eq 0 ] && LAST_FN=4
+
 echo ""
-read -p "Combien de VALIDATEURS supplémentaires voulez-vous ajouter ? (0-10) : " NEW_VALIDATORS
-read -p "Combien de FULL NODES supplémentaires voulez-vous ajouter ? (0-10) : " NEW_FULLNODES
+echo "📊 Nœuds existants :"
+echo "  - Dernier validateur: validator$LAST_VAL"
+echo "  - Dernier full node: fullnode$LAST_FN"
+echo ""
+
+read -p "Combien de VALIDATEURS supplémentaires ? (0-10) : " NEW_VALIDATORS
+read -p "Combien de FULL NODES supplémentaires ? (0-10) : " NEW_FULLNODES
 
 NEW_VALIDATORS=${NEW_VALIDATORS:-0}
 NEW_FULLNODES=${NEW_FULLNODES:-0}
@@ -33,34 +59,28 @@ fi
 echo ""
 echo "📝 Ajout de $NEW_VALIDATORS validateur(s) et $NEW_FULLNODES full node(s)..."
 
-# Trouver le dernier numéro de validateur et fullnode
-LAST_VAL=4
-LAST_FN=4
-
-# Créer les nouveaux validateurs
+# ============================================
+# CRÉER LES NOUVEAUX VALIDATEURS
+# ============================================
 for i in $(seq 1 $NEW_VALIDATORS); do
     NODE_NUM=$((LAST_VAL + i))
     NODE_NAME="validator$NODE_NUM"
     NODE_DIR="$BASE_DIR/nodes/$NODE_NAME"
     
     echo ""
-    echo "🔧 Création de $NODE_NAME..."
+    echo "🔧 Création de $NODE_NAME (numéro $NODE_NUM)..."
     
-    # Créer le répertoire
     mkdir -p $NODE_DIR/keystore
-    
-    # Créer le fichier password
     echo -n "$PASSWORD" > $NODE_DIR/password.txt
     
-    # Créer le compte Ethereum
     echo "  📦 Création du compte Ethereum..."
-    docker run --rm \
+    ADDR=$(docker run --rm \
         -v $NODE_DIR:/data \
         ethereum/client-go:v1.13.15 \
         account new --password /data/password.txt --keystore /data/keystore 2>&1 | \
-        grep "Public address of the key" | awk '{print "  ✅ Adresse: " $NF}'
+        grep "Public address of the key" | awk '{print $NF}')
+    echo "  ✅ Adresse: $ADDR"
     
-    # Initialiser avec genesis.json
     echo "  🔧 Initialisation avec genesis.json..."
     docker run --rm \
         -v $BASE_DIR/genesis.json:/genesis.json:ro \
@@ -68,14 +88,12 @@ for i in $(seq 1 $NEW_VALIDATORS); do
         ethereum/client-go:v1.13.15 \
         --datadir /data init /genesis.json 2>&1 | grep -E "(Successfully|Genesis)" || true
     
-    # Calculer les ports
     RPC_PORT=$((8540 + NODE_NUM))
     P2P_PORT=$((30300 + NODE_NUM))
     IP_ADDR="172.20.0.$((10 + NODE_NUM))"
     
     echo "  📝 Ports: RPC=$RPC_PORT, P2P=$P2P_PORT, IP=$IP_ADDR"
     
-    # Ajouter au docker-compose.yml
     cat >> $BASE_DIR/docker-compose.yml << EOF
 
   $NODE_NAME:
@@ -94,10 +112,12 @@ for i in $(seq 1 $NEW_VALIDATORS); do
       - --http
       - --http.port=$RPC_PORT
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net,admin,personal,miner,clique
+      - --http.api=eth,web3,net,admin,personal,miner,clique,txpool
       - --http.corsdomain=*
       - --authrpc.port=$((8550 + NODE_NUM))
       - --mine
+      - --miner.etherbase=$ADDR
+      - --unlock=$ADDR
       - --password=/root/.ethereum/password.txt
       - --allow-insecure-unlock
       - --syncmode=full
@@ -115,19 +135,19 @@ EOF
     echo "  ✅ $NODE_NAME ajouté au docker-compose.yml"
 done
 
-# Créer les nouveaux full nodes
+# ============================================
+# CRÉER LES NOUVEAUX FULL NODES
+# ============================================
 for i in $(seq 1 $NEW_FULLNODES); do
     NODE_NUM=$((LAST_FN + i))
     NODE_NAME="fullnode$NODE_NUM"
     NODE_DIR="$BASE_DIR/nodes/$NODE_NAME"
     
     echo ""
-    echo "🔧 Création de $NODE_NAME..."
+    echo "🔧 Création de $NODE_NAME (numéro $NODE_NUM)..."
     
-    # Créer le répertoire
     mkdir -p $NODE_DIR
     
-    # Initialiser avec genesis.json
     echo "  🔧 Initialisation avec genesis.json..."
     docker run --rm \
         -v $BASE_DIR/genesis.json:/genesis.json:ro \
@@ -135,14 +155,12 @@ for i in $(seq 1 $NEW_FULLNODES); do
         ethereum/client-go:v1.13.15 \
         --datadir /data init /genesis.json 2>&1 | grep -E "(Successfully|Genesis)" || true
     
-    # Calculer les ports (après les validateurs)
-    RPC_PORT=$((8540 + 4 + NEW_VALIDATORS + i))
-    P2P_PORT=$((30300 + 4 + NEW_VALIDATORS + i))
+    RPC_PORT=$((8540 + LAST_VAL + NEW_VALIDATORS + i))
+    P2P_PORT=$((30300 + LAST_VAL + NEW_VALIDATORS + i))
     IP_ADDR="172.20.0.$((20 + NODE_NUM))"
     
     echo "  📝 Ports: RPC=$RPC_PORT, P2P=$P2P_PORT, IP=$IP_ADDR"
     
-    # Ajouter au docker-compose.yml
     cat >> $BASE_DIR/docker-compose.yml << EOF
 
   $NODE_NAME:
@@ -161,7 +179,7 @@ for i in $(seq 1 $NEW_FULLNODES); do
       - --http
       - --http.port=$RPC_PORT
       - --http.addr=0.0.0.0
-      - --http.api=eth,web3,net
+      - --http.api=eth,web3,net,admin,txpool
       - --http.corsdomain=*
       - --syncmode=full
       - --snapshot=false
@@ -178,114 +196,119 @@ EOF
     echo "  ✅ $NODE_NAME ajouté au docker-compose.yml"
 done
 
+# ============================================
+# DÉMARRAGE DES NOUVEAUX NŒUDS
+# ============================================
 echo ""
 echo "=========================================="
 echo "🚀 Démarrage des nouveaux nœuds..."
 echo "=========================================="
 
-# Démarrer seulement les nouveaux nœuds
+cd $BASE_DIR
+
 for i in $(seq 1 $NEW_VALIDATORS); do
     NODE_NUM=$((LAST_VAL + i))
-    docker-compose up -d validator$NODE_NUM
+    docker compose -f docker-compose.yml up -d validator$NODE_NUM 2>/dev/null || docker-compose -f docker-compose.yml up -d validator$NODE_NUM 2>/dev/null
+    echo "  ✅ validator$NODE_NUM démarré"
 done
 
 for i in $(seq 1 $NEW_FULLNODES); do
     NODE_NUM=$((LAST_FN + i))
-    docker-compose up -d fullnode$NODE_NUM
+    docker compose -f docker-compose.yml up -d fullnode$NODE_NUM 2>/dev/null || docker-compose -f docker-compose.yml up -d fullnode$NODE_NUM 2>/dev/null
+    echo "  ✅ fullnode$NODE_NUM démarré"
 done
 
 echo ""
-echo "⏳ Attente de 20 secondes pour le démarrage..."
-sleep 20
+echo "⏳ Attente de 30 secondes pour le démarrage..."
+sleep 30
 
+# ============================================
+# CONNEXION AUTOMATIQUE DES NOUVEAUX NŒUDS
+# ============================================
 echo ""
 echo "=========================================="
 echo "🔗 Connexion des nouveaux nœuds au réseau..."
 echo "=========================================="
 
-# Récupérer les ENODEs des validateurs existants
-echo "Récupération des ENODEs des validateurs existants..."
-ENODES=""
-for port in 8541 8542 8543 8544; do
-    enode=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' 2>/dev/null | jq -r '.result.enode' 2>/dev/null)
+# Récupérer TOUS les enodes (existants + nouveaux)
+declare -A ENODES
+
+echo "📡 Récupération des enodes..."
+
+# Scanner tous les validateurs
+for port in $(seq 8541 $((8540 + LAST_VAL + NEW_VALIDATORS))); do
+    enode=$(curl -s -X POST http://localhost:$port \
+        -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' 2>/dev/null | jq -r '.result.enode' 2>/dev/null)
+    
     if [ -n "$enode" ] && [ "$enode" != "null" ]; then
-        ENODES="$ENODES $enode"
-        echo "  ✅ Validator port $port: $(echo $enode | cut -d'@' -f1)@..."
+        # Calculer l'IP selon le port
+        if [ $port -le 8544 ]; then
+            IP="172.20.0.$((11 + port - 8541))"
+        else
+            IP="172.20.0.$((10 + port - 8540))"
+        fi
+        enode_fixed=$(echo "$enode" | sed "s/127.0.0.1/$IP/" | sed "s/\[::\]/$IP/")
+        ENODES[$port]=$enode_fixed
+        echo "  ✅ Port $port: enode récupéré (IP: $IP)"
     fi
 done
 
-# Connecter les nouveaux validateurs aux validateurs existants
-for i in $(seq 1 $NEW_VALIDATORS); do
-    NODE_NUM=$((LAST_VAL + i))
-    RPC_PORT=$((8540 + NODE_NUM))
+# Scanner tous les fullnodes
+for port in $(seq 8545 $((8540 + LAST_FN + NEW_FULLNODES + NEW_VALIDATORS))); do
+    enode=$(curl -s -X POST http://localhost:$port \
+        -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' 2>/dev/null | jq -r '.result.enode' 2>/dev/null)
     
-    echo ""
-    echo "Connexion de validator$NODE_NUM (port $RPC_PORT)..."
-    
-    # Récupérer son propre enode
-    new_enode=$(curl -s -X POST http://localhost:$RPC_PORT -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_nodeInfo","params":[],"id":1}' 2>/dev/null | jq -r '.result.enode' 2>/dev/null)
-    
-    # Connecter aux validateurs existants
-    for existing_enode in $ENODES; do
-        curl -s -X POST http://localhost:$RPC_PORT -H 'Content-Type: application/json' -d "{\\"jsonrpc\\":\\"2.0\\",\\"method\\":\\"admin_addPeer\\",\\"params\\":[\\"$existing_enode\\"],\\"id\\":1}" > /dev/null 2>&1 || true
-    done
-    
-    # Connecter les validateurs existants à ce nouveau
-    for port in 8541 8542 8543 8544; do
-        curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d "{\\"jsonrpc\\":\\"2.0\\",\\"method\\":\\"admin_addPeer\\",\\"params\\":[\\"$new_enode\\"],\\"id\\":1}" > /dev/null 2>&1 || true
-    done
-    
-    echo "  ✅ Connecté au réseau"
-done
-
-# Connecter les nouveaux full nodes à tous les validateurs
-for i in $(seq 1 $NEW_FULLNODES); do
-    NODE_NUM=$((LAST_FN + i))
-    RPC_PORT=$((8540 + 4 + NEW_VALIDATORS + i))
-    
-    echo ""
-    echo "Connexion de fullnode$NODE_NUM (port $RPC_PORT)..."
-    
-    for existing_enode in $ENODES; do
-        curl -s -X POST http://localhost:$RPC_PORT -H 'Content-Type: application/json' -d "{\\"jsonrpc\\":\\"2.0\\",\\"method\\":\\"admin_addPeer\\",\\"params\\":[\\"$existing_enode\\"],\\"id\\":1}" > /dev/null 2>&1 || true
-    done
-    
-    echo "  ✅ Connecté au réseau"
+    if [ -n "$enode" ] && [ "$enode" != "null" ]; then
+        IP="172.20.0.$((20 + port - 8544))"
+        enode_fixed=$(echo "$enode" | sed "s/127.0.0.1/$IP/" | sed "s/\[::\]/$IP/")
+        ENODES[$port]=$enode_fixed
+        echo "  ✅ Port $port: enode récupéré (IP: $IP)"
+    fi
 done
 
 echo ""
-echo "⏳ Attente de 10 secondes pour la stabilisation..."
-sleep 10
+echo "🔗 Connexion de tous les nœuds entre eux (${#ENODES[@]} nœuds)..."
+
+# Connecter chaque nœud à tous les autres
+for port in "${!ENODES[@]}"; do
+    for other_port in "${!ENODES[@]}"; do
+        if [ "$port" != "$other_port" ]; then
+            result=$(curl -s -X POST http://localhost:$port \
+                -H 'Content-Type: application/json' \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"admin_addPeer\",\"params\":[\"${ENODES[$other_port]}\"],\"id\":1}" 2>/dev/null)
+            if echo "$result" | grep -q "true"; then
+                echo "  ✅ Port $port -> Port $other_port"
+            fi
+        fi
+    done
+done
 
 echo ""
-echo "=========================================="
-echo "📊 Vérification finale"
-echo "=========================================="
+echo "📊 Vérification des pairs connectés..."
+sleep 5
 
-# Vérifier tous les validateurs (anciens + nouveaux)
-for port in $(seq 8541 $((8540 + 4 + NEW_VALIDATORS))); do
-    peers=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"admin_peers","params":[],"id":1}' 2>/dev/null | jq '.result | length' 2>/dev/null || echo "0")
-    block=$(curl -s -X POST http://localhost:$port -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' 2>/dev/null | jq -r '.result' 2>/dev/null | xargs printf "%d\\n" 2>/dev/null || echo "0")
-    echo "Validateur (port $port): $peers peers | Bloc #$block"
+for port in "${!ENODES[@]}"; do
+    peers=$(curl -s -X POST http://localhost:$port \
+        -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}' 2>/dev/null | jq -r '.result' 2>/dev/null | xargs printf '%d' 2>/dev/null)
+    block=$(curl -s -X POST http://localhost:$port \
+        -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' 2>/dev/null | jq -r '.result' 2>/dev/null | xargs printf '%d' 2>/dev/null)
+    echo "  📊 Port $port: $peers pairs | Bloc #$block"
 done
 
 echo ""
 echo "=========================================="
-echo "✅ Nouveaux nœuds ajoutés avec succès !"
+echo "✅ Nouveaux nœuds ajoutés et connectés !"
 echo "=========================================="
 echo ""
 echo "📌 Résumé :"
-echo "  - Validateurs totaux: $((4 + NEW_VALIDATORS))"
-echo "  - Full nodes totaux: $((4 + NEW_FULLNODES))"
+echo "  - Total validateurs: $((LAST_VAL + NEW_VALIDATORS))"
+echo "  - Total full nodes: $((LAST_FN + NEW_FULLNODES))"
+echo "  - Total nœuds: ${#ENODES[@]}"
 echo ""
-echo "🚀 Pour redémarrer tout le réseau plus tard :"
-echo "  ./restart-poa-network.sh"
-'''
-
-# Sauvegarder le script
-with open('/mnt/kimi/output/add-new-nodes.sh', 'w') as f:
-    f.write(add_nodes_script)
-
-print("✅ Script pour ajouter des nœuds créé : add-new-nodes.sh")
-print("\n" + "="*60)
-print(add_nodes_script[:2000] + "...")
+echo "🔧 Commandes utiles :"
+echo "  - Voir les logs: docker logs -f geth-validator1"
+echo "  - Scanner les nœuds: curl http://localhost:8080/api/geth-nodes"

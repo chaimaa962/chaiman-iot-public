@@ -1,6 +1,0 @@
-eth-account>=0.11.0
-eth-keys>=0.4.0
-eth-utils>=2.3.0
-web3>=6.0.0
-aiohttp>=3.9.0
-python-dotenv>=1.0.0
