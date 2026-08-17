@@ -17,3 +17,14 @@ logs/
 nodes/
 logs/
 *.pid
+iot-backend/iot-backend
+iot-backend/iot-backend-bin
+iot-backend/iot-simulator
+*.exe
+*.pem
+*.key
+password*.txt
+*private_key*
+node*/keystore/
+data/keys/
+.env
