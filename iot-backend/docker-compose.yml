@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  iot-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iot-backend-go
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    environment:
+      - ENV=production
+      - DEBUG_MODE=false
+      - NODE_URL=https://nginx-proxy:8545
+    volumes:
+      - ./data:/app/data
+      - ../certs/backend:/app/certs:ro
+    networks:
+      - blockchain-internal
+      - backend-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  blockchain-internal:
+    external: true
+  backend-internal:
+    driver: bridge
+    internal: true

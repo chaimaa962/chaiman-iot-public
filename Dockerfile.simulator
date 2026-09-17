@@ -1,0 +1,9 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+RUN pip install aiohttp eth-account eth-utils python-dotenv
+
+COPY geth_nodes_simulator.py .
+
+CMD ["python", "geth_nodes_simulator.py"]

@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Configuration de base - pointe vers ton backend Go
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://localhost:8443';
 
 // Création d'une instance axios
 const api = axios.create({

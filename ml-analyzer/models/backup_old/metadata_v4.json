@@ -1,0 +1,17 @@
+{
+  "model_name": "autoencoder_3datasets_v4_98f1",
+  "version": "4.0",
+  "selected_threshold": 0.14370468,
+  "sequence_length": 10,
+  "feature_columns": [
+    "packet_size", "inter_arrival_time", "publish_rate", "bytes_sent", "bytes_received",
+    "qos_level", "topic_count", "bytes_ratio", "traffic_intensity", "packet_efficiency",
+    "hour_sin", "hour_cos", "sampling_rate", "packet_size_ma"
+  ],
+  "metrics": {
+    "f1": 0.9645,
+    "accuracy": 0.9482,
+    "precision": 0.9432,
+    "recall": 0.9869
+  }
+}

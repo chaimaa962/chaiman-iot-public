@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/chaimaa/iot-docker-project/iot-backend/contracts/IoTDeviceManager.sol": {
+      "lastModificationDate": 1779729069403,
+      "contentHash": "b1b9c6e03eb7a8fc78cfbcc9e59436f3",
+      "sourceName": "contracts/IoTDeviceManager.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IoTDeviceManager"
+      ]
+    }
+  }
+}

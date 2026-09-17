@@ -1,0 +1,45 @@
+{
+  "model_name": "autoencoder_3datasets_v5_final_scientific",
+  "model_version": "V4 Secure (Bidirectional LSTM + Attention)",
+  "sequence_length": 10,
+  "selected_threshold": 0.3425266146659851,
+  "feature_columns": [
+    "duration",
+    "bytes_sent",
+    "bytes_received",
+    "packet_count",
+    "bytes_per_sec",
+    "pkts_per_sec",
+    "bytes_per_pkt",
+    "bytes_ratio",
+    "bytes_sent_ratio",
+    "bytes_total",
+    "log_bytes_total",
+    "pkt_size_variance",
+    "high_volume_flag",
+    "burst_indicator"
+  ],
+  "datasets_used": [
+    "IoT-23",
+    "Bot-IoT",
+    "CSE-CIC-IDS2018"
+  ],
+  "lstm_units_1": 128,
+  "lstm_units_2": 64,
+  "bottleneck_dim": 32,
+  "metrics": {
+    "f1_score_anomaly": 0.9439516889979241,
+    "precision_anomaly": 0.9527619047619048,
+    "recall_anomaly": 0.9353029169783097,
+    "fpr": 0.11588785046728972,
+    "roc_auc": 0.9375,
+    "auc_pr": 0.9481
+  },
+  "training_info": {
+    "total_samples": 187183,
+    "normal_samples": 53481,
+    "anomaly_samples": 133702,
+    "epochs_trained": 147,
+    "best_val_loss": 0.15949
+  }
+}

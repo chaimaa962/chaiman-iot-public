@@ -1,0 +1,20 @@
+{
+  "precision": 0.9527619047619048,
+  "recall": 0.9353029169783097,
+  "f1_score": 0.9439516889979241,
+  "roc_auc": 0.9375285721275838,
+  "auc_pr": 0.9481443995652894,
+  "fpr": 0.11588785046728972,
+  "threshold": 0.3425266146659851,
+  "n_samples": 187183,
+  "n_sequences": 18718,
+  "sequence_length": 10,
+  "feature_count": 14,
+  "datasets_used": [
+    "IoT-23",
+    "Bot-IoT",
+    "CSE-CIC-IDS2018"
+  ],
+  "timestamp": "2026-05-23T22:44:17.193578",
+  "methodology_note": "Threshold calibrated on validation set. Test set used once for final evaluation only."
+}

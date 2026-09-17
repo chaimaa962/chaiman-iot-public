@@ -1,208 +1,135 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Typography,
-  Grid,
-  Box,
-  Paper,
-  Chip,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Button,
-  Card,
-  CardContent,
-  Avatar,
-  Divider,
-  Stack,
-  TextField,
-  InputAdornment,
-  TablePagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  useTheme
+  Container, Typography, Grid, Box, Paper, Chip, LinearProgress,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  IconButton, Tooltip, Alert, CircularProgress, Button, Card, CardContent,
+  Stack, TextField, InputAdornment, TablePagination,
+  Dialog, DialogTitle, DialogContent, DialogActions, useTheme
 } from '@mui/material';
 import {
-  Devices as DevicesIcon,
-  Security as SecurityIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
+  Devices as DevicesIcon, Security as SecurityIcon,
+  CheckCircle as CheckIcon, Error as ErrorIcon,
   Verified as VerifiedIcon,
-  Warning as WarningIcon,
-  History as HistoryIcon,
-  Refresh as RefreshIcon,
-  Info as InfoIcon,
-  Search as SearchIcon,
-  Download as DownloadIcon,
-  AccessTime as TimeIcon,
-  Fingerprint as FingerprintIcon,
-  Badge as BadgeIcon,
-  CalendarToday as CalendarIcon,
-  Visibility as ViewIcon
+  History as HistoryIcon, Refresh as RefreshIcon,
+  Info as InfoIcon, Search as SearchIcon,
+  Download as DownloadIcon, AccessTime as TimeIcon
 } from '@mui/icons-material';
-import { alpha } from '@mui/material/styles';
 import Layout from '../layout/Layout';
 import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip as ChartTooltip,
-  Legend,
-  Filler
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+  LineElement, Title, Tooltip as ChartTooltip, Legend, Filler
 } from 'chart.js';
 
-// Importer les API
-import { 
-  healthCheck, 
-  getAllDevices, 
-  getDeviceInfo, 
-  authenticateDevice,
-  getDeviceAuthHistory 
-} from '../../services/api';
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, Legend, Filler);
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  ChartTooltip,
-  Legend,
-  Filler
-);
+const API_BASE = 'http://localhost:8080';
 
+// Fonction securisee pour les dates
+const safeDate = (ts) => {
+  if (!ts) return new Date();
+  try {
+    const t = Number(ts);
+    const d = t > 1000000000000 ? new Date(t) : new Date(t * 1000);
+    return isNaN(d.getTime()) ? new Date() : d;
+  } catch { return new Date(); }
+};
+
+const safeStr = (str) => {
+  if (!str) return '';
+  return String(str).replace(/\r\n/g, ' ').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+};
 const Devices = () => {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [devices, setDevices] = useState([]);
+  const [gethNodes, setGethNodes] = useState([]);
+  const [, setTransactions] = useState([]);
+  const [globalStats, setGlobalStats] = useState({ totalDevices: 0, totalAuths: 0, latestBlock: 0 });
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [deviceDetails, setDeviceDetails] = useState(null);
   const [deviceHistory, setDeviceHistory] = useState([]);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [error, setError] = useState(null);
-  const [authenticating, setAuthenticating] = useState({});
-
-  // UI États
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Données du graphique
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
-      {
-        label: 'Authentifications ZKP',
-        data: [],
-        borderColor: '#4caf50',
-        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: 'Activité des appareils',
-        data: [],
-        borderColor: '#2196f3',
-        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-        tension: 0.4,
-        fill: true,
-        yAxisID: 'y1',
-      },
+      { label: 'Latence (ms)', data: [], borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,0.1)', tension: 0.4, fill: true },
+      { label: 'Transactions', data: [], borderColor: '#2196f3', backgroundColor: 'rgba(33,150,243,0.1)', tension: 0.4, fill: true, yAxisID: 'y1' },
     ],
   });
 
   const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: { 
-      legend: { position: 'top' },
-      title: { display: true, text: 'Activité des appareils en temps réel' }
-    },
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
     scales: {
-      y: { 
-        type: 'linear', 
-        display: true, 
-        position: 'left',
-        title: { display: true, text: "Nombre d'auth" }
-      },
-      y1: { 
-        type: 'linear', 
-        display: true, 
-        position: 'right', 
-        grid: { drawOnChartArea: false },
-        title: { display: true, text: 'Activité' }
-      },
+      y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'ms' } },
+      y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Nb' } },
     },
   };
 
-  // États simulés pour les statistiques
-  const [deviceStats, setDeviceStats] = useState({});
-
-  // Charger les données
+  // [FIRE] CHARGER LES VRAIES DONNEES DU BACKEND
   const loadData = async () => {
     setRefreshing(true);
     setError(null);
     try {
-      await healthCheck();
-      const devicesData = await getAllDevices();
-      console.log("📱 Appareils reçus:", devicesData);
-      setDevices(devicesData || []);
+      // 1. Health check
+      const healthRes = await fetch(`${API_BASE}/api/health`);
+      if (!healthRes.ok) throw new Error('Backend offline');
 
-      // Initialiser les statistiques simulées
-      const stats = {};
-      devicesData.forEach(device => {
-        stats[device.address] = {
-          attempts: Math.floor(Math.random() * 20) + 1,
-          failures: Math.floor(Math.random() * 5),
-          lastAttempt: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-          successRate: device.zkpValid ? 100 : Math.floor(Math.random() * 60),
-          firstSeen: new Date(Date.now() - Math.random() * 30 * 86400000).toISOString(),
-          lastSeen: device.lastSeen ? new Date(device.lastSeen * 1000).toISOString() : new Date().toISOString(),
-          manufacturer: ['ESP32', 'Raspberry Pi', 'Arduino', 'STM32'][Math.floor(Math.random() * 4)],
-          firmware: `v${Math.floor(Math.random() * 3)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`
-        };
+      // 2. Recuperer les devices IoT (filtres - sans Geth)
+      const devicesRes = await fetch(`${API_BASE}/api/devices`);
+      const devicesData = await devicesRes.json();
+      setDevices(Array.isArray(devicesData) ? devicesData : []);
+
+      // 3. Recuperer les noeuds Geth
+      const gethRes = await fetch(`${API_BASE}/api/geth-nodes`);
+      const gethData = await gethRes.json();
+      setGethNodes(Array.isArray(gethData) ? gethData : []);
+
+      // 4. Recuperer les stats globales
+      const statsRes = await fetch(`${API_BASE}/api/stats/global`);
+      const statsData = await statsRes.json();
+      setGlobalStats({
+        totalDevices: statsData.totalDevices || 0,
+        totalAuths: statsData.totalAuths || 0,
+        latestBlock: statsData.latestBlock || 0,
       });
-      setDeviceStats(stats);
 
-      // Générer les données du graphique
-      if (devicesData && devicesData.length > 0) {
-        const now = new Date();
-        const labels = Array.from({ length: 12 }, (_, i) => {
-          const time = new Date(now.getTime() - (11 - i) * 5 * 60000);
-          return time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      // 5. Recuperer les transactions recentes pour le graphique
+      const txRes = await fetch(`${API_BASE}/api/transactions/recent?limit=50`);
+      const txData = await txRes.json();
+      setTransactions(Array.isArray(txData) ? txData : []);
+
+      // 6. Construire le graphique avec les VRAIES transactions
+      if (txData && txData.length > 0) {
+        const last24 = txData.slice(-24);
+        const labels = last24.map(tx => {
+          try {
+            return safeDate(tx.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          } catch { return '--:--'; }
         });
-        
-        const authCounts = devicesData.map(() => Math.floor(Math.random() * 10) + 1);
-        const activityData = devicesData.map(() => Math.floor(Math.random() * 50) + 10);
-
+        const latencies = last24.map(tx => tx.latency || 0);
+        const txCounts = [];
+        for (let i = 0; i < last24.length; i++) {
+          txCounts.push(last24.slice(Math.max(0, i - 3), i + 1).length);
+        }
         setChartData({
-          labels: labels,
+          labels,
           datasets: [
-            { ...chartData.datasets[0], data: authCounts.slice(0, 12) },
-            { ...chartData.datasets[1], data: activityData.slice(0, 12) },
+            { ...chartData.datasets[0], data: latencies },
+            { ...chartData.datasets[1], data: txCounts },
           ],
         });
       }
     } catch (err) {
-      console.error('Erreur chargement:', err);
-      setError('Erreur de chargement des données');
+      setError('Erreur: ' + err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -211,588 +138,234 @@ const Devices = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000);
+    const interval = setInterval(loadData, 15000); // Rafraichir toutes les 15s
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleViewDetails = async (address) => {
-    try {
-      const device = await getDeviceInfo(address);
-      setDeviceDetails(device);
-      setSelectedDevice(address);
-      setDetailsDialogOpen(true);
-    } catch (err) {
-      console.error('Erreur détails:', err);
-    }
+  const handleViewDetails = (address) => {
+    const device = devices.find(d => d.address === address) || gethNodes.find(n => n.address === address);
+    setDeviceDetails(device || {});
+    setSelectedDevice(address);
+    setDetailsDialogOpen(true);
   };
 
   const handleViewHistory = async (address) => {
     try {
-      const history = await getDeviceAuthHistory(address);
-      setDeviceHistory(history || []);
+      const res = await fetch(`${API_BASE}/api/device/${address}/history?limit=50`);
+      const data = await res.json();
+      setDeviceHistory(Array.isArray(data) ? data : []);
       setSelectedDevice(address);
       setHistoryDialogOpen(true);
     } catch (err) {
-      console.error('Erreur historique:', err);
-    }
-  };
-
-  const handleAuthenticate = async (address) => {
-    setAuthenticating(prev => ({ ...prev, [address]: true }));
-    try {
-      const result = await authenticateDevice(address);
-      if (result.success) {
-        setDeviceStats(prev => ({
-          ...prev,
-          [address]: {
-            ...prev[address],
-            attempts: (prev[address]?.attempts || 0) + 1,
-            lastAttempt: new Date().toISOString()
-          }
-        }));
-        await loadData();
-      }
-    } catch (err) {
-      console.error('Erreur authentification:', err);
-    } finally {
-      setAuthenticating(prev => ({ ...prev, [address]: false }));
+      setDeviceHistory([]);
+      setHistoryDialogOpen(true);
     }
   };
 
   const handleExportCSV = () => {
     try {
-      const csvContent = [
-        ['Adresse', 'Nom', 'Fabricant', 'Firmware', 'Clé Publique', 'Statut', 'ZKP Valide', 'Première connexion', 'Dernière connexion', 'Tentatives', 'Taux de réussite'],
-        ...devices.map(d => {
-          const stats = deviceStats[d.address] || {};
-          return [
-            d.address || '',
-            d.name || 'ESP32',
-            stats.manufacturer || 'N/A',
-            stats.firmware || 'N/A',
-            d.publicKey || '',
-            d.isActive ? 'Actif' : 'Inactif',
-            d.zkpValid ? 'Oui' : 'Non',
-            stats.firstSeen ? new Date(stats.firstSeen).toLocaleString() : 'N/A',
-            stats.lastSeen ? new Date(stats.lastSeen).toLocaleString() : 'N/A',
-            stats.attempts || 0,
-            stats.successRate ? `${stats.successRate}%` : 'N/A'
-          ];
-        })
-      ].map(row => row.join(',')).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const allDevices = [...devices, ...gethNodes];
+      const rows = allDevices.map(d => [
+        safeStr(d.address || ''), d.isActive ? 'Actif' : 'Inactif',
+        d.authCount || 0, d.entityType || (d.isGethNode ? 'geth_node' : 'iot_device')
+      ]);
+      const csv = [['Adresse','Statut','Auths','Type'], ...rows].map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `appareils_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
+      link.download = `devices_${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
-      document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Erreur export CSV:', err);
-    }
+    } catch (err) {}
   };
 
-  // Filtrer les appareils
-  const filteredDevices = devices.filter(device =>
-    (device.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     device.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Fusionner IoT + Geth pour l'affichage complet
+  const allDevices = [
+    ...devices.map(d => ({ ...d, isGethNode: false, type: 'IoT', entityType: 'iot_device' })),
+    ...gethNodes.map(n => ({ ...n, isGethNode: true, type: n.type === 'validator' ? 'Validator' : 'Fullnode', address: n.address, entityType: n.type || 'geth' }))
+  ];
+
+  const filteredDevices = allDevices.filter(d =>
+    safeStr(d.address).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    safeStr(d.type).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const paginatedDevices = filteredDevices.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+  const paginatedDevices = filteredDevices.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const totalDevices = allDevices.length;
+  const iotCount = devices.length;
+  const gethCount = gethNodes.length;
+
+  if (loading) return (
+    <Layout><Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh"><CircularProgress /></Box></Layout>
   );
-
-  // Calculer les métriques
-  const totalDevices = devices.length;
-  const activeCount = devices.filter(d => d.isActive).length;
-  const zkpValidCount = devices.filter(d => d.zkpValid).length;
-  const inactiveCount = totalDevices - activeCount;
-  const successRate = totalDevices > 0 ? Math.round((zkpValidCount / totalDevices) * 100) : 0;
-
-  const getStatusColor = (device) => {
-    if (!device.isActive) return 'error';
-    if (!device.zkpValid) return 'warning';
-    return 'success';
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* En-tête */}
+        {/* En-tete */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <DevicesIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
             <Box>
-              <Typography variant="h4" gutterBottom>
-                Gestion des Appareils
-              </Typography>
+              <Typography variant="h4">Gestion des Appareils</Typography>
               <Typography variant="body2" color="text.secondary">
-                {totalDevices} appareils connectés • {activeCount} actifs • {zkpValidCount} ZKP valides
+                {totalDevices} total - {iotCount} IoT - {gethCount} Geth - Bloc #{globalStats.latestBlock}
               </Typography>
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Tooltip title="Exporter CSV">
-              <IconButton onClick={handleExportCSV} disabled={devices.length === 0}>
-                <DownloadIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Rafraîchir">
-              <IconButton onClick={loadData} disabled={refreshing}>
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
+            <Tooltip title="Rafraichir"><IconButton onClick={loadData} disabled={refreshing}><RefreshIcon /></IconButton></Tooltip>
+            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleExportCSV}>Exporter</Button>
           </Box>
         </Box>
 
         {refreshing && <LinearProgress sx={{ mb: 3 }} />}
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        {/* Statistiques */}
+        {/* KPI Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
+          {[
+            { t: 'Total', v: totalDevices, c: theme.palette.primary.main, i: <DevicesIcon sx={{ fontSize: 40 }} /> },
+            { t: 'IoT Devices', v: iotCount, c: '#4caf50', i: <DevicesIcon sx={{ fontSize: 40, color: '#4caf50' }} /> },
+            { t: 'Geth Nodes', v: gethCount, c: '#ff9800', i: <SecurityIcon sx={{ fontSize: 40, color: '#ff9800' }} /> },
+            { t: 'Authentications', v: globalStats.totalAuths, c: '#2196f3', i: <VerifiedIcon sx={{ fontSize: 40, color: '#2196f3' }} /> },
+          ].map((k, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Card><CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography color="text.secondary" gutterBottom>
-                      Total appareils
-                    </Typography>
-                    <Typography variant="h4">
-                      {totalDevices}
-                    </Typography>
-                  </Box>
-                  <DevicesIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+                  <Box><Typography color="text.secondary" gutterBottom>{k.t}</Typography><Typography variant="h4" sx={{ color: k.c }}>{k.v}</Typography></Box>
+                  <Box sx={{ color: k.c }}>{k.i}</Box>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography color="text.secondary" gutterBottom>
-                      Appareils actifs
-                    </Typography>
-                    <Typography variant="h4" color="success.main">
-                      {activeCount}
-                    </Typography>
-                  </Box>
-                  <VerifiedIcon sx={{ fontSize: 40, color: '#4caf50' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography color="text.secondary" gutterBottom>
-                      ZKP Valides
-                    </Typography>
-                    <Typography variant="h4" color="info.main">
-                      {zkpValidCount}
-                    </Typography>
-                  </Box>
-                  <SecurityIcon sx={{ fontSize: 40, color: '#2196f3' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography color="text.secondary" gutterBottom>
-                      Taux de réussite
-                    </Typography>
-                    <Typography variant="h4" color={successRate > 70 ? 'success.main' : 'warning.main'}>
-                      {successRate}%
-                    </Typography>
-                  </Box>
-                  <CheckIcon sx={{ fontSize: 40, color: successRate > 70 ? '#4caf50' : '#ff9800' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              </CardContent></Card>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* Graphique */}
+        {/* Graphique dynamique */}
         <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Activité des appareils
-          </Typography>
-          <Box sx={{ height: 300 }}>
-            <Line data={chartData} options={chartOptions} />
-          </Box>
+          <Typography variant="h6" gutterBottom>Activite en temps reel</Typography>
+          <Box sx={{ height: 300 }}><Line data={chartData} options={chartOptions} /></Box>
         </Paper>
 
-        {/* Barre de recherche */}
+        {/* Recherche */}
         <Paper sx={{ p: 2, mb: 2 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Rechercher par adresse ou nom..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
+          <TextField fullWidth size="small" placeholder="Rechercher par adresse ou type..."
+            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
           />
         </Paper>
 
-        {/* Tableau des appareils */}
+        {/* Tableau */}
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Liste complète des appareils
-          </Typography>
-          
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#f5f5f5' }}>
-                  <TableCell><strong>Appareil</strong></TableCell>
-                  <TableCell><strong>Adresse</strong></TableCell>
-                  <TableCell align="center"><strong>Statut</strong></TableCell>
-                  <TableCell align="center"><strong>ZKP</strong></TableCell>
-                  <TableCell><strong>Fabricant</strong></TableCell>
-                  <TableCell><strong>Firmware</strong></TableCell>
-                  <TableCell align="center"><strong>Tentatives</strong></TableCell>
-                  <TableCell><strong>Dernière connexion</strong></TableCell>
-                  <TableCell align="center"><strong>Actions</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedDevices.map((device) => {
-                  const stats = deviceStats[device.address] || {
-                    attempts: 0,
-                    failures: 0,
-                    manufacturer: 'ESP32',
-                    firmware: 'v1.0.0',
-                    lastAttempt: null,
-                    successRate: 0
-                  };
-                  const statusColor = getStatusColor(device);
-
-                  return (
-                    <TableRow key={device.address} hover>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: statusColor === 'success' ? '#4caf50' : statusColor === 'warning' ? '#ff9800' : '#f44336' }}>
-                            <DevicesIcon fontSize="small" sx={{ color: '#fff' }} />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {device.name || 'ESP32'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {stats.manufacturer}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <code style={{ 
-                          backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#f0f0f0',
-                          padding: '4px 8px', 
-                          borderRadius: '4px',
-                          fontSize: '0.85rem'
-                        }}>
-                          {device.address?.slice(0, 8)}...{device.address?.slice(-6)}
-                        </code>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          icon={device.isActive ? <VerifiedIcon /> : <WarningIcon />}
-                          label={device.isActive ? 'Actif' : 'Inactif'}
-                          color={device.isActive ? 'success' : 'error'}
-                          variant="filled"
-                          sx={{ minWidth: 80 }}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          icon={device.zkpValid ? <CheckIcon /> : <ErrorIcon />}
-                          label={device.zkpValid ? 'Valide' : 'Invalide'}
-                          color={device.zkpValid ? 'success' : 'error'}
-                          variant="outlined"
-                          sx={{ minWidth: 80 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{stats.manufacturer}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{stats.firmware}</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {stats.attempts}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {stats.successRate}% succès
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        {stats.lastAttempt ? (
-                          <Tooltip title={new Date(stats.lastAttempt).toLocaleString()}>
-                            <Box display="flex" alignItems="center" gap={0.5}>
-                              <TimeIcon fontSize="small" color="action" sx={{ fontSize: 16 }} />
-                              <Typography variant="caption">
-                                {new Date(stats.lastAttempt).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          </Tooltip>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            Jamais
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Stack direction="row" spacing={1} justifyContent="center">
-                          <Tooltip title="Voir détails">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleViewDetails(device.address)}
-                              color="info"
-                            >
-                              <InfoIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Historique">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleViewHistory(device.address)}
-                              color="primary"
-                            >
-                              <HistoryIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {!device.zkpValid && device.isActive && (
-                            <Tooltip title="Authentifier">
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleAuthenticate(device.address)}
-                                color="warning"
-                                disabled={authenticating[device.address]}
-                              >
-                                {authenticating[device.address] ? 
-                                  <CircularProgress size={20} /> : 
-                                  <SecurityIcon fontSize="small" />
-                                }
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {paginatedDevices.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
-                      <Typography color="text.secondary">
-                        Aucun appareil trouvé
+          <Typography variant="h6" gutterBottom>Tous les appareils ({filteredDevices.length})</Typography>
+          <TableContainer><Table>
+            <TableHead><TableRow sx={{ bgcolor: theme.palette.mode === 'dark' ? '#333' : '#f5f5f5' }}>
+              {['Type','Adresse','Statut','Auths','Derniere connexion','Actions'].map(h => <TableCell key={h}><strong>{h}</strong></TableCell>)}
+            </TableRow></TableHead>
+            <TableBody>
+              {paginatedDevices.map((device, idx) => (
+                <TableRow key={device.address || idx} hover>
+                  <TableCell>
+                    <Chip size="small"
+                      icon={device.isGethNode ? <SecurityIcon /> : <DevicesIcon />}
+                      label={device.type || 'IoT'}
+                      color={device.isGethNode ? 'warning' : 'success'}
+                      variant="filled"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <code style={{ fontSize: '0.8rem' }}>{safeStr(device.address).slice(0, 10)}...{safeStr(device.address).slice(-6)}</code>
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="small"
+                      icon={device.isActive ? <CheckIcon /> : <ErrorIcon />}
+                      label={device.isActive ? 'Actif' : 'Inactif'}
+                      color={device.isActive ? 'success' : 'error'}
+                    />
+                  </TableCell>
+                  <TableCell>{device.authCount || 0}</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <TimeIcon fontSize="small" color="action" sx={{ fontSize: 16 }} />
+                      <Typography variant="caption">
+                        {device.lastSeen ? safeDate(device.lastSeen).toLocaleDateString() : 'Jamais'}
                       </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={filteredDevices.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(e, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
-            labelRowsPerPage="Lignes par page"
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Details"><IconButton size="small" onClick={() => handleViewDetails(device.address)} color="info"><InfoIcon fontSize="small" /></IconButton></Tooltip>
+                      <Tooltip title="Historique"><IconButton size="small" onClick={() => handleViewHistory(device.address)} color="primary"><HistoryIcon fontSize="small" /></IconButton></Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paginatedDevices.length === 0 && (
+                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 3 }}><Typography color="text.secondary">Aucun appareil trouve</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table></TableContainer>
+          <TablePagination rowsPerPageOptions={[5, 10, 25, 50]} component="div" count={filteredDevices.length}
+            rowsPerPage={rowsPerPage} page={page} onPageChange={(e, np) => setPage(np)}
+            onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
           />
         </Paper>
 
-        {/* Dialog Détails */}
-        <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            <Box display="flex" alignItems="center" gap={1}>
-              <InfoIcon color="info" />
-              <Typography variant="h6">Détails de l'appareil</Typography>
-            </Box>
-          </DialogTitle>
+        {/* Dialog Details */}
+        <Dialog open={detailsDialogOpen} onClose={() => setDetailsDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Details de l'appareil</DialogTitle>
           <DialogContent dividers>
-            {deviceDetails && selectedDevice && (
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Informations générales
-                      </Typography>
-                      <Box display="flex" flexDirection="column" gap={1}>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body2" color="text.secondary">Nom:</Typography>
-                          <Typography variant="body2">{deviceDetails.name || 'ESP32'}</Typography>
-                        </Box>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body2" color="text.secondary">Adresse:</Typography>
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                            {selectedDevice}
-                          </Typography>
-                        </Box>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body2" color="text.secondary">Statut:</Typography>
-                          <Chip
-                            size="small"
-                            icon={deviceDetails.isActive ? <VerifiedIcon /> : <WarningIcon />}
-                            label={deviceDetails.isActive ? 'Actif' : 'Inactif'}
-                            color={deviceDetails.isActive ? 'success' : 'error'}
-                          />
-                        </Box>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body2" color="text.secondary">ZKP:</Typography>
-                          <Chip
-                            size="small"
-                            icon={deviceDetails.zkpValid ? <CheckIcon /> : <ErrorIcon />}
-                            label={deviceDetails.zkpValid ? 'Valide' : 'Invalide'}
-                            color={deviceDetails.zkpValid ? 'success' : 'error'}
-                            variant="outlined"
-                          />
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Clé publique
-                      </Typography>
-                      <Box sx={{ 
-                        backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#f5f5f5',
-                        p: 2,
-                        borderRadius: 1,
-                        fontFamily: 'monospace',
-                        fontSize: '0.85rem',
-                        wordBreak: 'break-all'
-                      }}>
-                        {deviceDetails.publicKey || 'N/A'}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Métadonnées
-                      </Typography>
-                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                        {deviceDetails.metadata || 'Aucune métadonnée'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+            {deviceDetails && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="body2"><strong>Adresse:</strong> <code>{selectedDevice}</code></Typography>
+                <Typography variant="body2"><strong>Statut:</strong> {deviceDetails.isActive ? 'Actif' : 'Inactif'}</Typography>
+                <Typography variant="body2"><strong>Authentifications:</strong> {deviceDetails.authCount || 0}</Typography>
+                <Typography variant="body2"><strong>Type:</strong> {deviceDetails.entityType || deviceDetails.type || 'IoT'}</Typography>
+                <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? '#333' : '#f5f5f5', p: 2, borderRadius: 1 }}>
+                  <Typography variant="body2" sx={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                    {safeStr(deviceDetails.publicKey || 'N/A')}
+                  </Typography>
+                </Box>
+              </Box>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDetailsDialogOpen(false)}>Fermer</Button>
-          </DialogActions>
+          <DialogActions><Button onClick={() => setDetailsDialogOpen(false)}>Fermer</Button></DialogActions>
         </Dialog>
 
         {/* Dialog Historique */}
         <Dialog open={historyDialogOpen} onClose={() => setHistoryDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            <Box display="flex" alignItems="center" gap={1}>
-              <HistoryIcon color="primary" />
-              <Typography variant="h6">Historique des authentifications</Typography>
-            </Box>
-          </DialogTitle>
+          <DialogTitle>Historique des authentifications</DialogTitle>
           <DialogContent dividers>
             {deviceHistory.length === 0 ? (
-              <Typography color="text.secondary" align="center" py={4}>
-                Aucune authentification enregistrée
-              </Typography>
+              <Typography color="text.secondary" align="center" py={4}>Aucune authentification</Typography>
             ) : (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell><strong>Date</strong></TableCell>
-                      <TableCell><strong>Statut</strong></TableCell>
-                      <TableCell><strong>Hash preuve</strong></TableCell>
-                      <TableCell align="right"><strong>Latence</strong></TableCell>
+              <TableContainer><Table size="small">
+                <TableHead><TableRow>
+                  {['Date','Statut','Hash'].map(h => <TableCell key={h}><strong>{h}</strong></TableCell>)}
+                </TableRow></TableHead>
+                <TableBody>
+                  {deviceHistory.map((record, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{record.timestamp ? safeDate(record.timestamp).toLocaleString() : 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip size="small"
+                          icon={record.success ? <CheckIcon /> : <ErrorIcon />}
+                          label={record.success ? 'Succes' : 'Echec'}
+                          color={record.success ? 'success' : 'error'}
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell><code style={{ fontSize: '0.8rem' }}>{safeStr(record.proofHash).slice(0, 30)}...</code></TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {deviceHistory.map((record, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{new Date(record.timestamp * 1000).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Chip
-                            size="small"
-                            icon={record.success ? <CheckIcon /> : <ErrorIcon />}
-                            label={record.success ? 'Succès' : 'Échec'}
-                            color={record.success ? 'success' : 'error'}
-                            variant="outlined"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <code style={{ fontSize: '0.8rem' }}>{record.proofHash?.slice(0, 20)}...</code>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
-                            <TimeIcon fontSize="small" color="action" sx={{ fontSize: 16 }} />
-                            <Typography variant="caption">
-                              {Math.floor(Math.random() * 100) + 20} ms
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  ))}
+                </TableBody>
+              </Table></TableContainer>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setHistoryDialogOpen(false)}>Fermer</Button>
-          </DialogActions>
+          <DialogActions><Button onClick={() => setHistoryDialogOpen(false)}>Fermer</Button></DialogActions>
         </Dialog>
       </Container>
     </Layout>
@@ -800,3 +373,4 @@ const Devices = () => {
 };
 
 export default Devices;
+

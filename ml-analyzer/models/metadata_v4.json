@@ -1,0 +1,19 @@
+{
+  "model_name": "autoencoder_3datasets_v4_98f1",
+  "version": "4.0",
+  "selected_threshold": 0.14370468,
+  "sequence_length": 10,
+  "feature_columns": [
+    "duration", "bytes_sent", "bytes_received", "packet_count",
+    "bytes_per_sec", "pkts_per_sec", "bytes_per_pkt", "bytes_ratio",
+    "bytes_sent_ratio", "bytes_total", "log_bytes_total", "pkt_size_variance",
+    "high_volume_flag", "burst_indicator"
+  ],
+  "metrics": {
+    "f1": 0.9645,
+    "accuracy": 0.9482,
+    "precision": 0.9432,
+    "recall": 0.9869,
+    "roc_auc": 0.9254
+  }
+}

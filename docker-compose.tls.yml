@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  iot-backend:
+    build: ./iot-backend
+    ports:
+      - "443:8443"  # HTTPS
+    environment:
+      - DOMAIN=votre-domaine.com
+      - CERT_EMAIL=admin@votre-domaine.com
+      - ENV=production
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - cert-cache:/var/lib/iot-backend/certs
+    restart: unless-stopped
+    networks:
+      - iot-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"   # HTTP redirect → HTTPS
+      - "443:443" # HTTPS
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - iot-backend
+    restart: unless-stopped
+
+volumes:
+  cert-cache:
+
+networks:
+  iot-network:
+    driver: bridge
