@@ -72,11 +72,11 @@ See [`CASE_STUDY.md`](CASE_STUDY.md) for the full write-up of these fixes.
 docker-compose up -d
 
 # 2. Run the ML anomaly detection service
-cd ml-analyzer
+cd iot-backend/ai
 python detection_dev.py
 
 # 3. Run the device simulator (registers 4 devices, starts authenticating)
-go run iot_simulator.go -backend=http://localhost:8080
+go run iot-backend/simulators/iot_simulator.go -backend=http://localhost:8080
 
 # 4. Open the dashboard
 cd iot-dashboard && npm start
@@ -97,6 +97,8 @@ Required environment variables are documented in `.env.example` (see `internal/c
 ## Status
 
 Prototype / demo-stage project, used as a technical showcase. Some hardening steps documented in `CASE_STUDY.md` are applied; production deployment would additionally require TLS certificate automation, secret rotation, and a formal third-party security audit.
+Related links :
+AI anomaly detection (Kaggle Notebook): https://www.kaggle.com/code/benadl/iot-anomaly-detection
 
 ---
 
