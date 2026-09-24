@@ -101,9 +101,3 @@ Related links :
 AI anomaly detection (Kaggle Notebook): https://www.kaggle.com/code/benadl/iot-anomaly-detection
 
 ---
-
-## Contact
-
-Available for freelance work on: blockchain security audits, Go backend development, IoT authentication systems, and cryptographic protocol design/migration.
-
-📧 **chaimaa.benadla@gmail.com**
