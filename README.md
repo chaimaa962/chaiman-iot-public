@@ -18,7 +18,7 @@ This is not a toy demo — it's a working system that was audited and hardened t
 - **An identity-squatting vulnerability**: proof-of-possession was optional at registration, allowing an attacker to register a fabricated Schnorr key for an address before its legitimate owner. Fixed by making the ECDSA proof-of-possession mandatory and server-derived.
 - **Blockchain nonce management** under concurrency: a single-owner nonce serializer, distinct retry strategies for "nonce too low" vs "replacement underpriced," and circuit breakers to prevent cascading failures when the blockchain or ML service is degraded.
 
-See [`CASE_STUDY.md`](./دراسة_حالة_CHAIMAN_IoT.md) for the full write-up of these fixes.
+See [`CASE_STUDY.md`](CASE_STUDY.md) for the full write-up of these fixes.
 
 ---
 
