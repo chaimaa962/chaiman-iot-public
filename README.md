@@ -101,3 +101,5 @@ Related links :
 AI anomaly detection (Kaggle Notebook): https://www.kaggle.com/code/benadl/iot-anomaly-detection
 
 ---
+© 2026 Chaimaa Benadla. All rights reserved.
+This project is published for educational and demonstration purposes.
